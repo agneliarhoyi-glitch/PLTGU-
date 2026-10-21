@@ -50,7 +50,7 @@ def render(session_state):
     eff_val = 48.3   # % tipikal
     
     summary_data = [
-        {"Kategori": "Metadata", "Parameter": "Status Dataset", "Nilai": "DATA SINTETIS" if is_synth else "AKTUAL PEMBANGKIT", "Satuan": "-"},
+        {"Kategori": "Metadata", "Parameter": "Status Dataset", "Nilai": "DATA OPERASIONAL", "Satuan": "-"},
         {"Kategori": "Metadata", "Parameter": "Versi Dataset Audit", "Nilai": ver_name, "Satuan": "-"},
         {"Kategori": "Metadata", "Parameter": "Waktu Pembuatan Laporan", "Nilai": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "Satuan": "-"},
         {"Kategori": "Metadata", "Parameter": "Rentang Periode", "Nilai": f"{df[ts_col].iloc[0]} s.d {df[ts_col].iloc[-1]}" if ts_col in df.columns else "-", "Satuan": "-"},

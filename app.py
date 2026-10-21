@@ -254,10 +254,8 @@ with st.sidebar:
         has_dataset = st.session_state.get("active_df") is not None
         if not has_dataset:
             mode_text = "BELUM ADA DATASET"
-        elif is_synth:
-            mode_text = "MOD DATA SINTETIS"
         else:
-            mode_text = "MOD DATA AKTUAL"
+            mode_text = "DATA OPERASI AKTIF"
         st.markdown(f'<div class="sidebar-category-title">{mode_text} • {len(allowed_menu_options)} MODUL</div>', unsafe_allow_html=True)
 
         if "pending_nav" in st.session_state:
