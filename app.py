@@ -85,13 +85,33 @@ def init_session():
         else:
             st.session_state["tag_mapping"] = {}
             
-        # Inisialisasi state dataset default (bersih / kosong)
-        # Pengguna dapat mengunggah berkas DCS melalui menu 'Import Data Historian'
-        st.session_state["raw_df"] = None
-        st.session_state["active_df"] = None
-        st.session_state["is_synthetic"] = False
-        st.session_state["active_version"] = None
-        st.session_state["dataset_metadata"] = None
+        # Inisialisasi state dataset: muat dataset aktif yang tersimpan jika ada (agar tetap utuh saat F5/reload)
+        active_csv = "data/active_dataset.csv"
+        active_meta_file = "data/active_dataset_meta.json"
+        if os.path.exists(active_csv) and os.path.exists(active_meta_file):
+            try:
+                loaded_df = pd.read_csv(active_csv)
+                with open(active_meta_file, "r", encoding="utf-8") as f_meta:
+                    loaded_meta = json.load(f_meta)
+                st.session_state["raw_df"] = loaded_df.copy()
+                st.session_state["active_df"] = loaded_df.copy()
+                st.session_state["dataset_metadata"] = loaded_meta
+                st.session_state["active_version"] = "v1_raw"
+                is_synth = "data_source_label" in loaded_df.columns and (loaded_df["data_source_label"] == "SINTETIS").any()
+                st.session_state["is_synthetic"] = is_synth
+            except Exception:
+                st.session_state["raw_df"] = None
+                st.session_state["active_df"] = None
+                st.session_state["dataset_metadata"] = None
+                st.session_state["active_version"] = None
+                st.session_state["is_synthetic"] = False
+        else:
+            st.session_state["raw_df"] = None
+            st.session_state["active_df"] = None
+            st.session_state["is_synthetic"] = False
+            st.session_state["active_version"] = None
+            st.session_state["dataset_metadata"] = None
+
         st.session_state["change_logs"] = []
         st.session_state["is_initialized"] = True
     

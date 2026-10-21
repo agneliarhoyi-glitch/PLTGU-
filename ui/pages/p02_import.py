@@ -5,6 +5,7 @@ Ultra-modern UI dengan visual stat card tajam, high-contrast typography, dan raw
 """
 
 import os
+import json
 from datetime import datetime
 import streamlit as st
 import streamlit.components.v1 as st_components
@@ -75,7 +76,7 @@ def render(session_state):
                 is_synth = "data_source_label" in df_loaded.columns and (df_loaded["data_source_label"] == "SINTETIS").any()
                 session_state["is_synthetic"] = is_synth
                 session_state["active_version"] = "v1_raw"
-                session_state["dataset_metadata"] = {
+                metadata = {
                     "filename": file_name,
                     "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     "size_kb": size_kb,
@@ -83,12 +84,33 @@ def render(session_state):
                     "rows": len(df_loaded),
                     "cols": len(df_loaded.columns)
                 }
+                session_state["dataset_metadata"] = metadata
+                
+                # Simpan dataset ke penyimpanan sesi persisten agar tidak hilang saat F5/reload
+                try:
+                    os.makedirs("data", exist_ok=True)
+                    df_loaded.to_csv("data/active_dataset.csv", index=False)
+                    with open("data/active_dataset_meta.json", "w", encoding="utf-8") as f_meta:
+                        json.dump(metadata, f_meta, indent=2)
+                except Exception:
+                    pass
+                    
                 st.rerun()
             except Exception as e:
                 st.error(f"Gagal membaca file: {str(e)}", icon=":material/error:")
         else:
             sheet_disp = cur_meta.get("sheet", "CSV Data")
             st.success(f"File '{file_name}' ({sheet_disp}) berhasil diimpor!", icon=":material/check_circle:")
+    elif session_state.get("active_df") is not None and not session_state["active_df"].empty:
+        cur_meta = session_state.get("dataset_metadata") or {}
+        f_name_active = cur_meta.get("filename", "Dataset Aktif")
+        n_rows_active = cur_meta.get("rows", len(session_state["active_df"]))
+        st.markdown(f"""
+        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:8px 12px; margin-top:8px; display:flex; align-items:center; gap:8px;">
+            <span style="color:#16A34A; font-weight:700; font-size:12px;">✓ Dataset Aktif:</span>
+            <span style="color:#15803D; font-size:12px;"><b>{f_name_active}</b> ({n_rows_active:,} baris data) tersimpan di sesi kerja Anda.</span>
+        </div>
+        """, unsafe_allow_html=True)
 
     # Tampilkan Metadata & Preview Data Mentah Asli
     active_df = session_state.get("active_df")
@@ -163,6 +185,14 @@ def render(session_state):
                         session_state["uploader_key"] = session_state.get("uploader_key", 0) + 1
                         session_state["pending_nav"] = "Import Data Historian"
                         session_state["dataset_deleted_toast"] = True
+                        
+                        # Hapus juga berkas fisik persisten dari folder data/
+                        for f_path in ["data/active_dataset.csv", "data/active_dataset_meta.json"]:
+                            if os.path.exists(f_path):
+                                try:
+                                    os.remove(f_path)
+                                except Exception:
+                                    pass
                         st.rerun()
             
             mc1, mc2, mc3, mc4, mc5 = st.columns(5, gap="small")
