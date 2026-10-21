@@ -80,19 +80,19 @@ def render(session_state):
         t_gt3 = df["gt3_exhaust_temp_c"].mean() if "gt3_exhaust_temp_c" in df.columns else 0.0
 
         with c_gt1:
-            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-1 (Biru Baja)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-1</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="zap", icon_bg="#EFF6FF", icon_color="#2563EB", title="Daya Gross GT-1", value=f"{p_gt1:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator", trend_subtext="aktif", trace_footer="Daya rata-rata periode terpilih")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="gauge", icon_bg="#EFF6FF", icon_color="#2563EB", title="Pressure Ratio GT-1", value=f"{pr_gt1:,.2f}", unit="PR", status_label="Normal", trend_arrow="•", trend_pct="Kompresor", trend_subtext="P_out / P_in", trace_footer="Kompresi aksial tingkat")
 
         with c_gt2:
-            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-2']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-2 (Teal)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-2']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-2</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="zap", icon_bg="#F0FDFA", icon_color="#0D9488", title="Daya Gross GT-2", value=f"{p_gt2:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator", trend_subtext="aktif", trace_footer="Daya rata-rata periode terpilih")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="gauge", icon_bg="#F0FDFA", icon_color="#0D9488", title="Pressure Ratio GT-2", value=f"{pr_gt2:,.2f}", unit="PR", status_label="Normal", trend_arrow="•", trend_pct="Kompresor", trend_subtext="P_out / P_in", trace_footer="Kompresi aksial tingkat")
 
         with c_gt3:
-            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-3']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-3 (Kuning Pasir)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-3']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-3</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="zap", icon_bg="#FFFBEB", icon_color="#D97706", title="Daya Gross GT-3", value=f"{p_gt3:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator", trend_subtext="aktif", trace_footer="Daya rata-rata periode terpilih")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="gauge", icon_bg="#FFFBEB", icon_color="#D97706", title="Pressure Ratio GT-3", value=f"{pr_gt3:,.2f}", unit="PR", status_label="Normal", trend_arrow="•", trend_pct="Kompresor", trend_subtext="P_out / P_in", trace_footer="Kompresi aksial tingkat")
@@ -130,19 +130,19 @@ def render(session_state):
         h3_stack = df["hrsg3_stack_temp_c"].mean() if "hrsg3_stack_temp_c" in df.columns else 0.0
 
         with c_h1:
-            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-1 (Biru Abu)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-1</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#EFF6FF", icon_color="#2563EB", title="Main Steam HRSG-1", value=f"{h1_steam:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Steam Flow", trend_subtext="uap utama", trace_footer="Produksi uap HP HRSG-1")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="wind", icon_bg="#F8FAFC", icon_color="#475569", title="Stack Gas Temp", value=f"{h1_stack:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Cerobong", trend_subtext="stack 1", trace_footer="Temperatur gas buang akhir")
 
         with c_h2:
-            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-2']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-2 (Hijau)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-2']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-2</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#ECFDF5", icon_color="#059669", title="Main Steam HRSG-2", value=f"{h2_steam:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Steam Flow", trend_subtext="uap utama", trace_footer="Produksi uap HP HRSG-2")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="wind", icon_bg="#F8FAFC", icon_color="#475569", title="Stack Gas Temp", value=f"{h2_stack:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Cerobong", trend_subtext="stack 2", trace_footer="Temperatur gas buang akhir")
 
         with c_h3:
-            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-3']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-3 (Oranye)</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-3']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-3</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#FFFBEB", icon_color="#D97706", title="Main Steam HRSG-3", value=f"{h3_steam:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Steam Flow", trend_subtext="uap utama", trace_footer="Produksi uap HP HRSG-3")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="wind", icon_bg="#F8FAFC", icon_color="#475569", title="Stack Gas Temp", value=f"{h3_stack:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Cerobong", trend_subtext="stack 3", trace_footer="Temperatur gas buang akhir")

@@ -611,17 +611,8 @@ def render_mockup_kpi_card(icon_key: Optional[str] = None,
     st.markdown(textwrap.dedent(html), unsafe_allow_html=True)
 
 def render_synthetic_banner(is_synthetic: bool = True):
-    """Banner watermark data sintetis dengan icon SVG alert."""
-    if is_synthetic:
-        alert_icon = LUCIDE_SVG_ICONS["alert_triangle"]
-        html = f"""
-        <div class="synthetic-banner">
-            <span style="display:inline-flex; align-items:center;">{alert_icon}</span>
-            <span><b>{SYNTHETIC_DATA_BANNER}</b></span>
-            <span style="font-size:11px; opacity:0.85; margin-left:8px; padding-left:8px; border-left:1px solid rgba(146,64,14,0.3);">Mode Evaluasi & Prototipe</span>
-        </div>
-        """
-        st.markdown(textwrap.dedent(html), unsafe_allow_html=True)
+    """Banner watermark data sintetis (dinonaktifkan agar antarmuka bersih & profesional)."""
+    return
 
 def render_status_badge(status: str, custom_text: Optional[str] = None) -> str:
     """Badge status pill."""
