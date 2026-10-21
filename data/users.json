@@ -1,0 +1,49 @@
+{
+  "maintenance1": {
+    "username": "maintenance 1",
+    "name": "Maintenance 1 / Lead Auditor",
+    "role": "Maintenance 1 / Lead Auditor",
+    "title": "Lead Energy Auditor & Thermal Performance Specialist",
+    "email": "maintenance1@pltgu-blok1.co.id",
+    "avatar": "M",
+    "password_hash": "431dcc382f01a13b6fbb96dadc305f9c86ea2edfc622c2f4c11505257da66790",
+    "permissions": [
+      "all",
+      "admin",
+      "config",
+      "export",
+      "edit_mappings",
+      "ai_run"
+    ]
+  },
+  "engineer": {
+    "username": "engineer",
+    "name": "Performance Engineer",
+    "role": "Plant Performance Engineer",
+    "title": "Senior Thermal Performance Engineer",
+    "email": "engineer@pltgu-blok1.co.id",
+    "avatar": "P",
+    "password_hash": "4a064ece52fca458504fc176f45f934ffc79f59e75e0fa4cb43999990d76cbdd",
+    "permissions": [
+      "view",
+      "calc",
+      "hysys",
+      "ai_run",
+      "clean"
+    ]
+  },
+  "operator": {
+    "username": "operator",
+    "name": "Operator DCS",
+    "role": "Control Room Operator",
+    "title": "Blok 1 Control Room Senior Operator",
+    "email": "operator@pltgu-blok1.co.id",
+    "avatar": "O",
+    "password_hash": "bace157d0e15bfc0a4ec7b86d6550179d78f8252f6a4857ef3eced04dd864077",
+    "permissions": [
+      "view",
+      "dashboard",
+      "kpi_trends"
+    ]
+  }
+}
