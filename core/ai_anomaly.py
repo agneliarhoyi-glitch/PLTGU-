@@ -68,6 +68,21 @@ class AnomalyDetector:
         
         timestamps = pd.to_datetime(clean_df[timestamp_col], errors="coerce").values
         
+        # Hitung baseline operasi per fitur:
+        # Untuk parameter fisik industri (daya, aliran bahan bakar/uap, tekanan), gunakan
+        # median dari data operasi aktif (> 0) jika tersedia, agar tidak terdistorsi oleh
+        # periode mesin shutdown / sensor dropout dengan nilai negatif (zero calibration drift).
+        baseline_dict = {}
+        for feat in valid_features:
+            series = clean_df[feat]
+            pos_series = series[series > 0]
+            if len(pos_series) >= 10:
+                baseline_dict[feat] = float(pos_series.median())
+            else:
+                baseline_dict[feat] = float(series.median())
+        overall_median = pd.Series(baseline_dict)
+        denom_series = overall_median.abs().apply(lambda v: max(1.0, float(v)))
+
         for idx in range(len(clean_df)):
             is_anom = persisted_anomalies.iloc[idx]
             if is_anom and not in_event:
@@ -82,12 +97,11 @@ class AnomalyDetector:
                 t_end = pd.to_datetime(timestamps[event_end_idx]).strftime("%Y-%m-%d %H:%M")
                 dur_min = (pd.to_datetime(timestamps[event_end_idx]) - pd.to_datetime(timestamps[event_start_idx])).total_seconds() / 60.0
                 
-                # Cari fitur mana yang paling menyimpang dari median populasi
+                # Cari fitur mana yang paling menyimpang dari median baseline operasi
                 event_slice = clean_df.iloc[event_start_idx:event_end_idx + 1]
-                overall_median = clean_df[valid_features].median()
                 event_median = event_slice[valid_features].median()
                 
-                rel_deviations = ((event_median - overall_median) / overall_median.abs().replace(0, 1.0)) * 100.0
+                rel_deviations = ((event_median - overall_median) / denom_series) * 100.0
                 worst_feature = rel_deviations.abs().idxmax()
                 dev_val = rel_deviations[worst_feature]
                 
@@ -104,6 +118,12 @@ class AnomalyDetector:
                     
                 label_name = tag_labels.get(worst_feature, worst_feature) if tag_labels else worst_feature
                 
+                act_val = round(float(event_median[worst_feature]), 2)
+                exp_val = round(float(overall_median[worst_feature]), 2)
+                # Pastikan expected_value tidak negatif jika actual bernilai non-negatif
+                if exp_val < 0 and act_val >= 0:
+                    exp_val = 0.0
+
                 finding = AnomalyFinding(
                     id=f"ANOM-{equipment_name}-{len(findings)+1:03d}",
                     timestamp_start=t_start,
@@ -112,8 +132,8 @@ class AnomalyDetector:
                     equipment=equipment_name,
                     tags=[worst_feature],
                     finding_type="Anomali Proses",
-                    actual_value=round(float(event_median[worst_feature]), 2),
-                    expected_value=round(float(overall_median[worst_feature]), 2),
+                    actual_value=act_val,
+                    expected_value=exp_val,
                     unit="engineering unit",
                     deviation_pct=round(float(dev_val), 2),
                     confidence_severity=severity,
@@ -134,13 +154,17 @@ class AnomalyDetector:
             dur_min = (pd.to_datetime(timestamps[event_end_idx]) - pd.to_datetime(timestamps[event_start_idx])).total_seconds() / 60.0
             
             event_slice = clean_df.iloc[event_start_idx:event_end_idx + 1]
-            overall_median = clean_df[valid_features].median()
             event_median = event_slice[valid_features].median()
             
-            rel_deviations = ((event_median - overall_median) / overall_median.abs().replace(0, 1.0)) * 100.0
+            rel_deviations = ((event_median - overall_median) / denom_series) * 100.0
             worst_feature = rel_deviations.abs().idxmax()
             dev_val = rel_deviations[worst_feature]
             
+            act_val = round(float(event_median[worst_feature]), 2)
+            exp_val = round(float(overall_median[worst_feature]), 2)
+            if exp_val < 0 and act_val >= 0:
+                exp_val = 0.0
+
             finding = AnomalyFinding(
                 id=f"ANOM-{equipment_name}-{len(findings)+1:03d}",
                 timestamp_start=t_start,
@@ -149,8 +173,8 @@ class AnomalyDetector:
                 equipment=equipment_name,
                 tags=[worst_feature],
                 finding_type="Anomali Proses",
-                actual_value=round(float(event_median[worst_feature]), 2),
-                expected_value=round(float(overall_median[worst_feature]), 2),
+                actual_value=act_val,
+                expected_value=exp_val,
                 unit="engineering unit",
                 deviation_pct=round(float(dev_val), 2),
                 confidence_severity="Perhatian",
