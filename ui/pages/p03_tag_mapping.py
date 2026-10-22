@@ -79,23 +79,23 @@ SMART_ALIASES = {
     "ambient_press_bar": ["ambient_press_bar", "ambient_press", "p_ambient", "tekanan_barometrik"],
     "fuel_lhv_kj_kg": ["fuel_lhv_kj_kg", "lhv_kj_kg", "lhv", "fuel_lhv"],
     
-    "gt1_power": ["gt1_gross_mw", "gt1_power", "gt1_mw", "gt_1_mw", "gt1_generator_mw"],
-    "gt1_fuel_flow": ["gt1_fuel_flow_kg_h", "gt1_fuel_flow_kg_s", "gt1_fuel_flow", "gt1_fuel"],
-    "gt1_comp_p_in": ["gt1_comp_p_in_bar", "gt1_comp_p_in", "gt1_p_inlet"],
-    "gt1_comp_p_out": ["gt1_comp_p_out_bar", "gt1_comp_p_out", "gt1_p_discharge"],
-    "gt1_exhaust_temp": ["gt1_exhaust_temp_c", "gt1_exhaust_temp", "gt1_ttxm"],
+    "gt1_power": ["GTDL-19173", "gt1_gross_mw", "gt1_power", "gt1_mw", "gt_1_mw", "gt1_generator_mw", "gt1_load"],
+    "gt1_fuel_flow": ["CFGAAI-0004", "GTDL-19161", "gt1_fuel_flow_kg_h", "gt1_fuel_flow_kg_s", "gt1_fuel_flow", "gt1_fuel"],
+    "gt1_comp_p_in": ["GTDL-19075", "gt1_comp_p_in_bar", "gt1_comp_p_in", "gt1_p_inlet"],
+    "gt1_comp_p_out": ["GTDL-19149", "gt1_comp_p_out_bar", "gt1_comp_p_out", "gt1_p_discharge"],
+    "gt1_exhaust_temp": ["GTDL-19071", "gt1_exhaust_temp_c", "gt1_exhaust_temp", "gt1_ttxm"],
     
-    "gt2_power": ["gt2_gross_mw", "gt2_power", "gt2_mw", "gt_2_mw", "gt2_generator_mw"],
-    "gt2_fuel_flow": ["gt2_fuel_flow_kg_h", "gt2_fuel_flow_kg_s", "gt2_fuel_flow", "gt2_fuel"],
-    "gt2_comp_p_in": ["gt2_comp_p_in_bar", "gt2_comp_p_in", "gt2_p_inlet"],
-    "gt2_comp_p_out": ["gt2_comp_p_out_bar", "gt2_comp_p_out", "gt2_p_discharge"],
-    "gt2_exhaust_temp": ["gt2_exhaust_temp_c", "gt2_exhaust_temp", "gt2_ttxm"],
+    "gt2_power": ["GTDL-29173", "gt2_gross_mw", "gt2_power", "gt2_mw", "gt_2_mw", "gt2_generator_mw", "gt2_load"],
+    "gt2_fuel_flow": ["CFGAAI-0005", "GTDL-29161", "gt2_fuel_flow_kg_h", "gt2_fuel_flow_kg_s", "gt2_fuel_flow", "gt2_fuel"],
+    "gt2_comp_p_in": ["GTDL-29075", "gt2_comp_p_in_bar", "gt2_comp_p_in", "gt2_p_inlet"],
+    "gt2_comp_p_out": ["GTDL-29149", "gt2_comp_p_out_bar", "gt2_comp_p_out", "gt2_p_discharge"],
+    "gt2_exhaust_temp": ["GTDL-29071", "gt2_exhaust_temp_c", "gt2_exhaust_temp", "gt2_ttxm"],
     
-    "gt3_power": ["gt3_gross_mw", "gt3_power", "gt3_mw", "gt_3_mw", "gt3_generator_mw"],
-    "gt3_fuel_flow": ["gt3_fuel_flow_kg_h", "gt3_fuel_flow_kg_s", "gt3_fuel_flow", "gt3_fuel"],
-    "gt3_comp_p_in": ["gt3_comp_p_in_bar", "gt3_comp_p_in", "gt3_p_inlet"],
-    "gt3_comp_p_out": ["gt3_comp_p_out_bar", "gt3_comp_p_out", "gt3_p_discharge"],
-    "gt3_exhaust_temp": ["gt3_exhaust_temp_c", "gt3_exhaust_temp", "gt3_ttxm"],
+    "gt3_power": ["GTDL-39173", "gt3_gross_mw", "gt3_power", "gt3_mw", "gt_3_mw", "gt3_generator_mw", "gt3_load"],
+    "gt3_fuel_flow": ["CFGAAI-0006", "GTDL-39161", "gt3_fuel_flow_kg_h", "gt3_fuel_flow_kg_s", "gt3_fuel_flow", "gt3_fuel"],
+    "gt3_comp_p_in": ["GTDL-39075", "gt3_comp_p_in_bar", "gt3_comp_p_in", "gt3_p_inlet"],
+    "gt3_comp_p_out": ["GTDL-39149", "gt3_comp_p_out_bar", "gt3_comp_p_out", "gt3_p_discharge"],
+    "gt3_exhaust_temp": ["GTDL-39071", "gt3_exhaust_temp_c", "gt3_exhaust_temp", "gt3_ttxm"],
     
     "hrsg1_steam_flow": ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow", "hrsg1_steam"],
     "hrsg1_stack_temp": ["hrsg1_stack_temp_c", "hrsg1_stack_temp", "hrsg1_stack"],
@@ -111,17 +111,36 @@ SMART_ALIASES = {
     
     "main_steam_p": ["main_steam_pressure_bar", "main_steam_p", "ms_press_bar"],
     "main_steam_t": ["main_steam_temp_c", "main_steam_t", "ms_temp_c"],
-    "st_power": ["st_gross_mw", "st_power", "st_mw", "st_generator_mw"],
+    "st_power": ["STDL-20106", "st_gross_mw", "st_power", "st_mw", "st_generator_mw", "st_load"],
     
     "condenser_p": ["condenser_pressure_bar", "condenser_p", "p_condenser"],
-    "cw_in_t": ["cw_inlet_temp_c", "cw_in_t", "t_cw_in"],
-    "cw_out_t": ["cw_outlet_temp_c", "cw_out_t", "t_cw_out"],
+    "cw_in_t": ["4HRCTE-0002", "cw_inlet_temp_c", "cw_in_t", "t_cw_in"],
+    "cw_out_t": ["4HRCTE-0003", "cw_outlet_temp_c", "cw_out_t", "t_cw_out"],
     "cw_flow": ["cw_flow_kg_s", "cw_flow", "flow_cw"],
     
     "plant_gross": ["plant_gross_mw", "plant_gross", "total_gross_mw"],
     "plant_aux": ["plant_aux_power_mw", "plant_aux", "aux_power_mw"],
     "plant_net": ["plant_net_power_mw", "plant_net", "total_net_mw"]
 }
+
+def auto_detect_tag_mapping(df_columns, existing_mapping=None) -> dict:
+    """Mencocokkan nama kolom DataFrame ke variabel kanonikal berdasarkan alias cerdas dan DCS tags."""
+    new_map = (existing_mapping or {}).copy()
+    col_list = list(df_columns)
+    col_lower_map = {str(c).strip().lower(): str(c) for c in col_list}
+
+    for code, _, _, _ in CANONICAL_VARIABLES:
+        current_val = new_map.get(code)
+        # Jika belum ada atau nilai saat ini tidak valid di kolom dataframe, cari alias
+        if not current_val or current_val not in col_list:
+            aliases = SMART_ALIASES.get(code, [code])
+            for alias in aliases:
+                a_clean = alias.strip().lower()
+                if a_clean in col_lower_map:
+                    new_map[code] = col_lower_map[a_clean]
+                    break
+    return new_map
+
 
 def render(session_state):
     render_synthetic_banner(session_state.get("is_synthetic", True))

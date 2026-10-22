@@ -129,6 +129,13 @@ def render(session_state):
                 }
                 session_state["dataset_metadata"] = metadata
                 
+                # Auto-detect mapping tag DCS secara cerdas
+                try:
+                    from ui.pages.p03_tag_mapping import auto_detect_tag_mapping
+                    session_state["tag_mapping"] = auto_detect_tag_mapping(df_loaded.columns, session_state.get("tag_mapping"))
+                except Exception:
+                    pass
+                
                 # Simpan dataset ke penyimpanan sesi persisten agar tidak hilang saat F5/reload
                 try:
                     os.makedirs("data", exist_ok=True)

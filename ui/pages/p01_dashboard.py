@@ -52,6 +52,11 @@ def render(session_state):
         render_empty_dataset_notice(mode="banner", key_suffix="p01_dash")
         return
 
+    # Auto-detect mapping jika ada tag DCS yang cocok
+    from ui.pages.p03_tag_mapping import auto_detect_tag_mapping
+    mapping = auto_detect_tag_mapping(df.columns, mapping)
+    session_state["tag_mapping"] = mapping
+
     # Parameter kalkulasi
     ts_col = mapping.get("timestamp", "timestamp")
     gross_col = mapping.get("plant_gross", "plant_gross_mw")
@@ -59,13 +64,29 @@ def render(session_state):
     aux_col = mapping.get("plant_aux", "plant_aux_power_mw")
     lhv_col = mapping.get("fuel_lhv_kj_kg", "fuel_lhv_kj_kg")
     
+    gen_cols = [c for c in [mapping.get("gt1_power"), mapping.get("gt2_power"), mapping.get("gt3_power"), mapping.get("st_power")] if c and c in df.columns]
+
+    if net_col in df.columns:
+        avg_net_mw = float(df[net_col].mean())
+    elif gen_cols:
+        avg_net_mw = float(df[gen_cols].sum(axis=1).mean() * 0.9668)
+    else:
+        avg_net_mw = 367.20
+
+    if gross_col in df.columns:
+        avg_gross_mw = float(df[gross_col].mean())
+    elif gen_cols:
+        avg_gross_mw = float(df[gen_cols].sum(axis=1).mean())
+    else:
+        avg_gross_mw = 379.80
+
+    if aux_col in df.columns:
+        avg_aux_mw = float(df[aux_col].mean())
+    else:
+        avg_aux_mw = max(1.0, avg_gross_mw - avg_net_mw)
+    
     # Integrasi energi periode (kWh)
     net_kwh_dict = integrate_time_series_energy(df, power_col=net_col, time_col=ts_col) if net_col in df.columns else {"total_kwh": 0}
-    total_net_gwh = (net_kwh_dict["total_kwh"] * 1000.0) / 1e9 if net_kwh_dict["total_kwh"] > 0 else 0.26
-    
-    avg_net_mw = df[net_col].mean() if net_col in df.columns else 367.20
-    avg_aux_mw = df[aux_col].mean() if aux_col in df.columns else 12.6
-    avg_gross_mw = df[gross_col].mean() if gross_col in df.columns else 379.80
     
     # Hitung bahan bakar total (kJ)
     lhv_val = df[lhv_col].iloc[0] if lhv_col in df.columns and not df[lhv_col].isna().all() else 49500.0
@@ -102,6 +123,7 @@ def render(session_state):
         
     total_fuel_energy_kj = total_fuel_kg * lhv_val
     total_net_kwh = net_kwh_dict["total_kwh"] * 1000.0 if net_kwh_dict["total_kwh"] > 0 else (avg_net_mw * len(df) * dt_hours * 1000.0)
+    total_net_gwh = float(total_net_kwh / 1e6)
 
     kpi_hr = calc_period_heat_rate(total_fuel_energy_kj=total_fuel_energy_kj, total_net_elec_energy_kwh=total_net_kwh)
     kpi_eff = calc_period_efficiency(total_elec_energy_kwh=total_net_kwh, total_fuel_energy_kj=total_fuel_energy_kj)
@@ -274,21 +296,49 @@ def render(session_state):
     # GT-3: Yellow/Gold (#EAB308)
     # Steam Turbine: Purple (#9333EA)
     # Plant Net Power: Deep Navy (#12304A)
-    if "gt1_gross_mw" in plot_df.columns:
-        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["gt1_gross_mw"], name="GT-1 Gross", line={"color": "#2F6690", "width": 1.6, "shape": "spline"}))
-    if "gt2_gross_mw" in plot_df.columns:
-        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["gt2_gross_mw"], name="GT-2 Gross", line={"color": "#06B6D4", "width": 1.6, "shape": "spline"}))
-    if "gt3_gross_mw" in plot_df.columns:
-        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["gt3_gross_mw"], name="GT-3 Gross", line={"color": "#EAB308", "width": 1.6, "shape": "spline"}))
-    if "st_gross_mw" in plot_df.columns:
-        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["st_gross_mw"], name="Steam Turbine (ST)", line={"color": "#9333EA", "width": 1.8, "shape": "spline"}))
-    if net_col in plot_df.columns:
-        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[net_col], name="Plant Net Power", line={"color": "#12304A", "width": 2.6, "shape": "spline"}))
+    # Resolusi kolom tag daya secara cerdas (lewat mapping atau alias DCS)
+    def _find_power_col(canon_key, fallback_list):
+        mapped = mapping.get(canon_key)
+        if mapped and mapped in plot_df.columns:
+            return mapped
+        for f in fallback_list:
+            if f in plot_df.columns:
+                return f
+            for c in plot_df.columns:
+                if c.strip().lower() == f.strip().lower():
+                    return c
+        return None
+
+    col_gt1 = _find_power_col("gt1_power", ["GTDL-19173", "gt1_gross_mw", "gt1_power", "gt1_gross", "gt1_load"])
+    col_gt2 = _find_power_col("gt2_power", ["GTDL-29173", "gt2_gross_mw", "gt2_power", "gt2_gross", "gt2_load"])
+    col_gt3 = _find_power_col("gt3_power", ["GTDL-39173", "gt3_gross_mw", "gt3_power", "gt3_gross", "gt3_load"])
+    col_st  = _find_power_col("st_power", ["STDL-20106", "st_gross_mw", "st_power", "st_gross", "st_load"])
+    col_net = _find_power_col("plant_net", ["plant_net_power_mw", "plant_net", "net_mw", "total_net_mw"])
+
+    if col_gt1 and col_gt1 in plot_df.columns:
+        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_gt1], name="GT-1 Gross", line={"color": "#2F6690", "width": 1.6, "shape": "spline"}))
+    if col_gt2 and col_gt2 in plot_df.columns:
+        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_gt2], name="GT-2 Gross", line={"color": "#06B6D4", "width": 1.6, "shape": "spline"}))
+    if col_gt3 and col_gt3 in plot_df.columns:
+        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_gt3], name="GT-3 Gross", line={"color": "#EAB308", "width": 1.6, "shape": "spline"}))
+    if col_st and col_st in plot_df.columns:
+        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_st], name="Steam Turbine (ST)", line={"color": "#9333EA", "width": 1.8, "shape": "spline"}))
+    
+    if col_net and col_net in plot_df.columns:
+        fig.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_net], name="Plant Net Power", line={"color": "#12304A", "width": 2.6, "shape": "spline"}))
+    elif any([col_gt1, col_gt2, col_gt3, col_st]):
+        # Hitung estimasi net power dari daya generator aktif jika tag net belum ada
+        gens = [pd.to_numeric(plot_df[c], errors="coerce").fillna(0) for c in [col_gt1, col_gt2, col_gt3, col_st] if c and c in plot_df.columns]
+        if gens:
+            est_net = sum(gens) * 0.9668
+            fig.add_trace(go.Scatter(x=plot_df[ts_col], y=est_net, name="Plant Net Power (Est.)", line={"color": "#12304A", "width": 2.4, "dash": "dash", "shape": "spline"}))
 
     fig.update_layout(
-        yaxis={"range": [0, 420], "dtick": 100},
         height=380
     )
     
-    st.plotly_chart(fig, use_container_width=True)
+    if len(fig.data) > 0:
+        st.plotly_chart(fig, use_container_width=True)
+    else:
+        st.info("💡 Tag daya generator belum terpetakan. Buka menu **Tag Mapping & Unit** lalu klik **Auto-Match Tag Cerdas** untuk menghubungkan tag daya.", icon=":material/lightbulb:")
     st.markdown("</div>", unsafe_allow_html=True)

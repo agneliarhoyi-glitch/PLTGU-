@@ -99,6 +99,12 @@ def init_session():
                 st.session_state["active_version"] = "v1_raw"
                 is_synth = "data_source_label" in loaded_df.columns and (loaded_df["data_source_label"] == "SINTETIS").any()
                 st.session_state["is_synthetic"] = is_synth
+                
+                try:
+                    from ui.pages.p03_tag_mapping import auto_detect_tag_mapping
+                    st.session_state["tag_mapping"] = auto_detect_tag_mapping(loaded_df.columns, st.session_state.get("tag_mapping"))
+                except Exception:
+                    pass
             except Exception:
                 st.session_state["raw_df"] = None
                 st.session_state["active_df"] = None
