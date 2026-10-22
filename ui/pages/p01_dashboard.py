@@ -89,10 +89,16 @@ def render(session_state):
         fuel_kg_series = df["plant_total_fuel_kg_h"] * dt_hours
         total_fuel_kg = float(fuel_kg_series.sum())
     else:
-        f1 = df[mapping.get("gt1_fuel_flow", "gt1_fuel_flow_kg_h")] if mapping.get("gt1_fuel_flow") in df.columns else 0
-        f2 = df[mapping.get("gt2_fuel_flow", "gt2_fuel_flow_kg_h")] if mapping.get("gt2_fuel_flow") in df.columns else 0
-        f3 = df[mapping.get("gt3_fuel_flow", "gt3_fuel_flow_kg_h")] if mapping.get("gt3_fuel_flow") in df.columns else 0
-        total_fuel_kg = float(((f1 + f2 + f3) * dt_hours).sum())
+        fuel_parts = []
+        for k in ["gt1_fuel_flow", "gt2_fuel_flow", "gt3_fuel_flow"]:
+            col_name = mapping.get(k, f"{k}_kg_h")
+            if col_name in df.columns:
+                fuel_parts.append(pd.to_numeric(df[col_name], errors="coerce").fillna(0))
+        if fuel_parts:
+            combined_fuel = sum(fuel_parts)
+            total_fuel_kg = float((combined_fuel * dt_hours).sum())
+        else:
+            total_fuel_kg = 0.0
         
     total_fuel_energy_kj = total_fuel_kg * lhv_val
     total_net_kwh = net_kwh_dict["total_kwh"] * 1000.0 if net_kwh_dict["total_kwh"] > 0 else (avg_net_mw * len(df) * dt_hours * 1000.0)
