@@ -214,10 +214,136 @@ def render(session_state):
         icon_key="chart",
         badge_text="Independent Validation"
     )
-    
-    if "gt2_comp_pr" in df.columns and "gt1_comp_pr" in df.columns:
-        fig_ev = create_styled_plot("Bukti Penurunan Pressure Ratio GT-2 (Kandidat Fouling) vs GT-1 (Normal Baseline)", x_label="Waktu", y_label="Pressure Ratio")
+
+    def _find_col(canon, fallbacks):
+        c = mapping.get(canon)
+        if c and c in df.columns:
+            return c
+        for fb in fallbacks:
+            if fb in df.columns:
+                return fb
+        return None
+
+    # Cari kolom-kolom parameter peralatan
+    col_pr1 = _find_col("gt1_comp_p_out", ["gt1_comp_pr", "GTDL-19149", "gt1_comp_p_out_bar"])
+    col_pr2 = _find_col("gt2_comp_p_out", ["gt2_comp_pr", "GTDL-29149", "gt2_comp_p_out_bar"])
+    col_pr3 = _find_col("gt3_comp_p_out", ["gt3_comp_pr", "GTDL-39149", "gt3_comp_p_out_bar"])
+
+    col_p1 = _find_col("gt1_power", ["gt1_gross_mw", "GTDL-19173", "gt1_power"])
+    col_p2 = _find_col("gt2_power", ["gt2_gross_mw", "GTDL-29173", "gt2_power"])
+    col_p3 = _find_col("gt3_power", ["gt3_gross_mw", "GTDL-39173", "gt3_power"])
+
+    col_t1 = _find_col("gt1_exhaust_temp", ["gt1_exhaust_temp_c", "GTDL-19071"])
+    col_t2 = _find_col("gt2_exhaust_temp", ["gt2_exhaust_temp_c", "GTDL-29071"])
+    col_t3 = _find_col("gt3_exhaust_temp", ["gt3_exhaust_temp_c", "GTDL-39071"])
+
+    col_s1 = _find_col("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"])
+    col_s2 = _find_col("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"])
+    col_s3 = _find_col("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow"])
+
+    evidence_modes = {}
+    if col_pr1 or col_pr2 or col_pr3:
+        evidence_modes["Pressure Ratio Kompresor GT (Deteksi Fouling)"] = {
+            "y_label": "Pressure Ratio",
+            "traces": [
+                (col_pr1, "GT-1 PR (Baseline)", EQUIPMENT_COLORS.get("GT-1", "#2563EB"), "dash"),
+                (col_pr2, "GT-2 PR (Unit Terindikasi)", EQUIPMENT_COLORS.get("GT-2", "#0D9488"), "solid"),
+                (col_pr3, "GT-3 PR", EQUIPMENT_COLORS.get("GT-3", "#D97706"), "dot")
+            ]
+        }
+    if col_p1 or col_p2 or col_p3:
+        evidence_modes["Daya Gross Pembangkitan GT (MW)"] = {
+            "y_label": "Daya Listrik (MW)",
+            "traces": [
+                (col_p1, "GT-1 Power", EQUIPMENT_COLORS.get("GT-1", "#2563EB"), "solid"),
+                (col_p2, "GT-2 Power", EQUIPMENT_COLORS.get("GT-2", "#0D9488"), "solid"),
+                (col_p3, "GT-3 Power", EQUIPMENT_COLORS.get("GT-3", "#D97706"), "solid")
+            ]
+        }
+    if col_t1 or col_t2 or col_t3:
+        evidence_modes["Temperatur Gas Buang (Exhaust Temp) GT (°C)"] = {
+            "y_label": "Temperatur (°C)",
+            "traces": [
+                (col_t1, "GT-1 Exhaust Temp", EQUIPMENT_COLORS.get("GT-1", "#2563EB"), "solid"),
+                (col_t2, "GT-2 Exhaust Temp", EQUIPMENT_COLORS.get("GT-2", "#0D9488"), "solid"),
+                (col_t3, "GT-3 Exhaust Temp", EQUIPMENT_COLORS.get("GT-3", "#D97706"), "solid")
+            ]
+        }
+    if col_s1 or col_s2 or col_s3:
+        evidence_modes["Laju Alir Uap Utama (Main Steam Flow) HRSG (kg/s)"] = {
+            "y_label": "Laju Alir Steam (kg/s)",
+            "traces": [
+                (col_s1, "HRSG-1 Main Steam", EQUIPMENT_COLORS.get("HRSG-1", "#3B82F6"), "solid"),
+                (col_s2, "HRSG-2 Main Steam", EQUIPMENT_COLORS.get("HRSG-2", "#10B981"), "solid"),
+                (col_s3, "HRSG-3 Main Steam", EQUIPMENT_COLORS.get("HRSG-3", "#F59E0B"), "solid")
+            ]
+        }
+
+    # Fallback jika nama tag standar sama sekali tidak ada
+    if not evidence_modes:
+        num_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if num_cols:
+            fallback_cols = num_cols[:3]
+            evidence_modes["Parameter Operasi Terpantau"] = {
+                "y_label": "Nilai Sensor",
+                "traces": [(c, str(c), "#2563EB", "solid") for c in fallback_cols]
+            }
+
+    if evidence_modes:
+        c_sel, _ = st.columns([1.8, 2.2])
+        with c_sel:
+            selected_mode_key = st.selectbox(
+                "Pilih Parameter Bukti Operasional:",
+                options=list(evidence_modes.keys()),
+                key="ai_evidence_mode_selector"
+            )
+
+        mode_info = evidence_modes[selected_mode_key]
         plot_slice = df.iloc[::max(1, len(df)//1000)].copy() if len(df) > 1000 else df.copy()
-        fig_ev.add_trace(go.Scatter(x=plot_slice[ts_col], y=plot_slice["gt1_comp_pr"], name="GT-1 Baseline PR", line={"color": EQUIPMENT_COLORS["GT-1"], "dash": "dot"}))
-        fig_ev.add_trace(go.Scatter(x=plot_slice[ts_col], y=plot_slice["gt2_comp_pr"], name="GT-2 PR (Mengalami Penurunan)", line={"color": EQUIPMENT_COLORS["GT-2"], "width": 2}))
-        st.plotly_chart(fig_ev, width="stretch")
+
+        fig_ev = create_styled_plot(
+            title=f"Tren Bukti Operasi: {selected_mode_key}",
+            x_label="Waktu Deret Operasi",
+            y_label=mode_info["y_label"]
+        )
+
+        traces_added = 0
+        for col_name, label, color, line_style in mode_info["traces"]:
+            if col_name and col_name in plot_slice.columns:
+                series = pd.to_numeric(plot_slice[col_name], errors="coerce")
+                line_dict = {"color": color, "width": 2 if line_style == "solid" else 1.5}
+                if line_style != "solid":
+                    line_dict["dash"] = line_style
+                fig_ev.add_trace(go.Scatter(
+                    x=plot_slice[ts_col] if ts_col in plot_slice.columns else plot_slice.index,
+                    y=series,
+                    name=label,
+                    line=line_dict
+                ))
+                traces_added += 1
+
+        # Berikan highlight visual rentang kejadian anomali jika terdeteksi
+        if findings and ts_col in df.columns:
+            for item in findings[:2]:
+                try:
+                    if item.timestamp_start and item.timestamp_end:
+                        fig_ev.add_vrect(
+                            x0=item.timestamp_start,
+                            x1=item.timestamp_end,
+                            fillcolor="rgba(239, 68, 68, 0.12)",
+                            line_width=1,
+                            line_color="rgba(239, 68, 68, 0.4)",
+                            annotation_text=f"Anomali {item.equipment}",
+                            annotation_position="top left",
+                            annotation_font_size=10,
+                            annotation_font_color="#B91C1C"
+                        )
+                except Exception:
+                    pass
+
+        if traces_added > 0:
+            st.plotly_chart(fig_ev, width="stretch")
+        else:
+            st.info("Parameter untuk tren bukti tidak ditemukan di kolom dataset.", icon=":material/info:")
+    else:
+        st.info("Tidak ada kolom numerik yang tersedia untuk menampilkan grafik bukti.", icon=":material/info:")
