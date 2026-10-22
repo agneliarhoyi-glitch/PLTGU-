@@ -261,6 +261,46 @@ def render(session_state):
                 except Exception as e:
                     st.error(f"Format JSON mapping salah: {e}", icon=":material/error:")
 
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+    # TABEL TRANSPARANSI SEMUA VARIABEL YANG TERBACA
+    with st.expander("📋 Ringkasan Transparansi: Daftar Seluruh Tag yang Terbaca di Sistem", expanded=True, icon=":material/table_chart:"):
+        st.markdown("""
+        <div style="font-size:12.5px; color:#475569; margin-bottom:10px;">
+            Berikut adalah daftar seluruh parameter standar pembangkit yang berhasil terhubung dengan sensor di file Anda, lengkap dengan nilai rata-rata operasionalnya:
+        </div>
+        """, unsafe_allow_html=True)
+        
+        summary_rows = []
+        for code, label, unit, eq in CANONICAL_VARIABLES:
+            mapped_col = current_mapping.get(code)
+            if mapped_col and mapped_col in df.columns:
+                series = pd.to_numeric(df[mapped_col], errors="coerce").dropna()
+                val_disp = f"{float(series.mean()):,.2f}" if not series.empty else "Aktif"
+                source_type = "Perhitungan Mesin" if "plant_" in str(mapped_col) else "Sensor Langsung DCS"
+                summary_rows.append({
+                    "Sub-Sistem": eq,
+                    "Parameter Standar": label,
+                    "Kode Tag / Kolom File": mapped_col,
+                    "Satuan": unit,
+                    "Rata-rata Nilai": val_disp,
+                    "Asal Sumber": source_type,
+                    "Status": "✓ Terhubung"
+                })
+            else:
+                summary_rows.append({
+                    "Sub-Sistem": eq,
+                    "Parameter Standar": label,
+                    "Kode Tag / Kolom File": "-",
+                    "Satuan": unit,
+                    "Rata-rata Nilai": "-",
+                    "Asal Sumber": "Tidak Ada di File",
+                    "Status": "Belum Dipetakan"
+                })
+        
+        summary_df = pd.DataFrame(summary_rows)
+        st.dataframe(summary_df, width="stretch", height=320)
+
     st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
     
     # 2. NAVIGASI SUB-SISTEM DENGAN SEGMENTED PILLS MODERN
