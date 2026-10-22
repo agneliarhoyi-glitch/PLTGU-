@@ -184,8 +184,8 @@ def render(session_state):
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
                     <span style="font-size:15px; font-weight:800; color:#0F172A;">Kelengkapan Skema Variabel:</span>
                     <span style="font-size:13px; font-weight:800; color:#2563EB;">{mapped_count} / {total_canonical} Tag ({pct_complete:.1f}%)</span>
-                    <span style="background:{'#ECFDF5' if pct_complete >= 80 else '#FFFBEB'}; color:{'#059669' if pct_complete >= 80 else '#D97706'}; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; border:1px solid {'#A7F3D0' if pct_complete >= 80 else '#FDE68A'};">
-                        {'✓ Terpetakan Baik' if pct_complete >= 50 else 'Perlu Penyesuaian'}
+                    <span style="background:{'#ECFDF5' if pct_complete >= 45 else '#FFFBEB'}; color:{'#059669' if pct_complete >= 45 else '#D97706'}; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; border:1px solid {'#A7F3D0' if pct_complete >= 45 else '#FDE68A'};">
+                        {'✓ Metrik Inti Siap' if pct_complete >= 45 else 'Perlu Penyesuaian'}
                     </span>
                 </div>
                 <div class="mapping-progress-track">
