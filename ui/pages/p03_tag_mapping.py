@@ -157,6 +157,29 @@ def render(session_state):
         render_empty_dataset_notice(mode="card", key_suffix="p03")
         return
 
+    # Turunkan variabel level-pembangkit (gross, net, aux) dari penjumlahan daya mesin jika belum ada
+    p_cols = ["GTDL-19173", "GTDL-29173", "GTDL-39173", "STDL-20106"]
+    if all(c in df.columns for c in p_cols):
+        if "plant_gross_mw" not in df.columns:
+            df["plant_gross_mw"] = df[p_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
+        if "plant_aux_power_mw" not in df.columns:
+            df["plant_aux_power_mw"] = df["plant_gross_mw"] * 0.035
+        if "plant_net_power_mw" not in df.columns:
+            df["plant_net_power_mw"] = df["plant_gross_mw"] - df["plant_aux_power_mw"]
+    elif "gt1_gross_mw" in df.columns:
+        p_std = [c for c in ["gt1_gross_mw", "gt2_gross_mw", "gt3_gross_mw", "st_gross_mw"] if c in df.columns]
+        if "plant_gross_mw" not in df.columns and p_std:
+            df["plant_gross_mw"] = df[p_std].apply(pd.to_numeric, errors="coerce").sum(axis=1)
+            df["plant_aux_power_mw"] = df["plant_gross_mw"] * 0.035
+            df["plant_net_power_mw"] = df["plant_gross_mw"] - df["plant_aux_power_mw"]
+            
+    if "operating_status" not in df.columns:
+        df["operating_status"] = "NORMAL"
+    if "ambient_press_bar" not in df.columns:
+        df["ambient_press_bar"] = 1.013
+    if "fuel_lhv_kj_kg" not in df.columns:
+        df["fuel_lhv_kj_kg"] = 50000.0
+
     columns_available = ["(Tidak Dipetakan)"] + list(df.columns)
     current_mapping = session_state.get("tag_mapping", {})
     

@@ -120,6 +120,29 @@ def render(session_state):
                     sheet_selected = st.selectbox("Pilih Sheet Excel:", sheet_names)
                     df_loaded = pd.read_excel(uploaded_file, sheet_name=sheet_selected)
                     
+                # Auto-derive plant-level operational variables from machine sensors
+                p_cols = ["GTDL-19173", "GTDL-29173", "GTDL-39173", "STDL-20106"]
+                if all(c in df_loaded.columns for c in p_cols):
+                    if "plant_gross_mw" not in df_loaded.columns:
+                        df_loaded["plant_gross_mw"] = df_loaded[p_cols].apply(pd.to_numeric, errors="coerce").sum(axis=1)
+                    if "plant_aux_power_mw" not in df_loaded.columns:
+                        df_loaded["plant_aux_power_mw"] = df_loaded["plant_gross_mw"] * 0.035
+                    if "plant_net_power_mw" not in df_loaded.columns:
+                        df_loaded["plant_net_power_mw"] = df_loaded["plant_gross_mw"] - df_loaded["plant_aux_power_mw"]
+                elif "gt1_gross_mw" in df_loaded.columns:
+                    p_std = [c for c in ["gt1_gross_mw", "gt2_gross_mw", "gt3_gross_mw", "st_gross_mw"] if c in df_loaded.columns]
+                    if "plant_gross_mw" not in df_loaded.columns and p_std:
+                        df_loaded["plant_gross_mw"] = df_loaded[p_std].apply(pd.to_numeric, errors="coerce").sum(axis=1)
+                        df_loaded["plant_aux_power_mw"] = df_loaded["plant_gross_mw"] * 0.035
+                        df_loaded["plant_net_power_mw"] = df_loaded["plant_gross_mw"] - df_loaded["plant_aux_power_mw"]
+                        
+                if "operating_status" not in df_loaded.columns:
+                    df_loaded["operating_status"] = "NORMAL"
+                if "ambient_press_bar" not in df_loaded.columns:
+                    df_loaded["ambient_press_bar"] = 1.013
+                if "fuel_lhv_kj_kg" not in df_loaded.columns:
+                    df_loaded["fuel_lhv_kj_kg"] = 50000.0
+
                 session_state["raw_df"] = df_loaded.copy()
                 session_state["active_df"] = df_loaded.copy()
                 is_synth = "data_source_label" in df_loaded.columns and (df_loaded["data_source_label"] == "SINTETIS").any()
