@@ -12,6 +12,49 @@ import streamlit.components.v1 as st_components
 import pandas as pd
 from ui.components import render_synthetic_banner, render_page_hero, LUCIDE_SVG_ICONS, clean_html
 
+def _robust_read_csv(uploaded_file) -> pd.DataFrame:
+    """Membaca CSV secara tangguh dengan auto-detect pemisah (koma/titik-koma/tab), encoding, dan skip baris rusak."""
+    raw_bytes = uploaded_file.getvalue()
+    
+    # 1. Deteksi encoding
+    encoding_to_use = "utf-8"
+    for enc in ["utf-8-sig", "utf-8", "latin1", "cp1252"]:
+        try:
+            sample_text = raw_bytes[:16384].decode(enc)
+            encoding_to_use = enc
+            break
+        except Exception:
+            continue
+    else:
+        sample_text = raw_bytes[:16384].decode("utf-8", errors="ignore")
+        
+    # 2. Deteksi delimiter paling dominan di 10 baris pertama
+    lines = [l for l in sample_text.splitlines() if l.strip()][:10]
+    sep = ","
+    if lines:
+        comma_cnt = sum(l.count(",") for l in lines)
+        semi_cnt = sum(l.count(";") for l in lines)
+        tab_cnt = sum(l.count("\t") for l in lines)
+        if semi_cnt > comma_cnt and semi_cnt > tab_cnt:
+            sep = ";"
+        elif tab_cnt > comma_cnt and tab_cnt > semi_cnt:
+            sep = "\t"
+            
+    # 3. Coba baca dengan C engine standar (tercepat)
+    uploaded_file.seek(0)
+    try:
+        return pd.read_csv(uploaded_file, sep=sep, encoding=encoding_to_use, low_memory=False)
+    except Exception:
+        # 4. Fallback jika ada tokenizing error (kelebihan koma, unescaped quote, dll)
+        uploaded_file.seek(0)
+        try:
+            return pd.read_csv(uploaded_file, sep=sep, encoding=encoding_to_use, engine="python", on_bad_lines="skip")
+        except Exception:
+            # 5. Fallback pamungkas: auto-sniff python engine
+            uploaded_file.seek(0)
+            return pd.read_csv(uploaded_file, sep=None, engine="python", encoding=encoding_to_use, on_bad_lines="skip")
+
+
 def render(session_state):
     # Tampilkan notifikasi toast jika dataset baru saja dihapus
     if session_state.pop("dataset_deleted_toast", False):
@@ -63,7 +106,7 @@ def render(session_state):
                 size_kb = round(len(uploaded_file.getvalue()) / 1024, 1)
                 
                 if file_name.endswith(".csv"):
-                    df_loaded = pd.read_csv(uploaded_file)
+                    df_loaded = _robust_read_csv(uploaded_file)
                     sheet_selected = "CSV Data"
                 else:
                     xl = pd.ExcelFile(uploaded_file)

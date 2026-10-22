@@ -69,17 +69,33 @@ def render(session_state):
     
     # Hitung bahan bakar total (kJ)
     lhv_val = df[lhv_col].iloc[0] if lhv_col in df.columns and not df[lhv_col].isna().all() else 49500.0
+    
+    # Deteksi interval waktu rata-rata (menit) dari timestamp
+    detected_dt_min = 5.0
+    if ts_col in df.columns:
+        try:
+            ts_series = pd.to_datetime(df[ts_col], errors="coerce").dropna().sort_values()
+            if len(ts_series) > 1:
+                diffs_sec = ts_series.diff().dt.total_seconds().dropna()
+                valid_diffs = diffs_sec[(diffs_sec > 0) & (diffs_sec < 7200)]
+                if not valid_diffs.empty:
+                    detected_dt_min = float(valid_diffs.median() / 60.0)
+        except Exception:
+            detected_dt_min = 5.0
+            
+    dt_hours = max(0.001, detected_dt_min / 60.0)
+    
     if "plant_total_fuel_kg_h" in df.columns:
-        fuel_kg_series = df["plant_total_fuel_kg_h"] * (5.0 / 60.0)
+        fuel_kg_series = df["plant_total_fuel_kg_h"] * dt_hours
         total_fuel_kg = float(fuel_kg_series.sum())
     else:
         f1 = df[mapping.get("gt1_fuel_flow", "gt1_fuel_flow_kg_h")] if mapping.get("gt1_fuel_flow") in df.columns else 0
         f2 = df[mapping.get("gt2_fuel_flow", "gt2_fuel_flow_kg_h")] if mapping.get("gt2_fuel_flow") in df.columns else 0
         f3 = df[mapping.get("gt3_fuel_flow", "gt3_fuel_flow_kg_h")] if mapping.get("gt3_fuel_flow") in df.columns else 0
-        total_fuel_kg = float(((f1 + f2 + f3) * (5.0 / 60.0)).sum())
+        total_fuel_kg = float(((f1 + f2 + f3) * dt_hours).sum())
         
     total_fuel_energy_kj = total_fuel_kg * lhv_val
-    total_net_kwh = net_kwh_dict["total_kwh"] * 1000.0 if net_kwh_dict["total_kwh"] > 0 else (avg_net_mw * len(df) * 5 / 60 * 1000.0)
+    total_net_kwh = net_kwh_dict["total_kwh"] * 1000.0 if net_kwh_dict["total_kwh"] > 0 else (avg_net_mw * len(df) * dt_hours * 1000.0)
 
     kpi_hr = calc_period_heat_rate(total_fuel_energy_kj=total_fuel_energy_kj, total_net_elec_energy_kwh=total_net_kwh)
     kpi_eff = calc_period_efficiency(total_elec_energy_kwh=total_net_kwh, total_fuel_energy_kj=total_fuel_energy_kj)
@@ -225,6 +241,7 @@ def render(session_state):
     # BAGIAN GRAFIK MULTI-UNIT SESUAI PERSIS MOCKUP
     chart_svg = LUCIDE_SVG_ICONS.get("chart", "")
     calendar_svg = LUCIDE_SVG_ICONS.get("calendar", "")
+    interval_label = f"Interval {int(round(detected_dt_min))} Menit ▾" if abs(detected_dt_min - round(detected_dt_min)) < 0.1 else f"Interval {detected_dt_min:.1f} Menit ▾"
     st.markdown(f"""
     <div class="chart-card-container">
         <div class="chart-card-header">
@@ -237,7 +254,7 @@ def render(session_state):
             </div>
             <div class="chart-interval-badge">
                 <span style="display:inline-flex; align-items:center;">{calendar_svg}</span>
-                <span>Interval 5 Menit ▾</span>
+                <span>{interval_label}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
