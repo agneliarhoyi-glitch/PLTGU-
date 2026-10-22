@@ -263,43 +263,123 @@ def render(session_state):
 
     st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
 
+    def _classify_tag(t_name: str):
+        t_up = str(t_name).upper()
+        if t_name == "timestamp":
+            return "Plant Level", "Timestamp Waktu Operasi DCS", "Datetime", "Sinkronisasi Waktu Seluruh Halaman"
+        elif "plant_gross" in t_name:
+            return "Plant Level", "Total Daya Listrik Kotor PLTGU", "MW", "Dashboard KPI & Neraca Massa Energi"
+        elif "plant_aux" in t_name:
+            return "Plant Level", "Pemakaian Listrik Sendiri (Auxiliary)", "MW", "Dashboard KPI & Neraca Massa Energi"
+        elif "plant_net" in t_name:
+            return "Plant Level", "Total Daya Listrik Bersih PLTGU", "MW", "Dashboard KPI, Tren, & Laporan"
+        elif "operating_status" in t_name:
+            return "Plant Level", "Status Operasi Unit (NORMAL/TRIP)", "Category", "Filter Operasi & Validasi Anomali"
+        elif "ambient_press" in t_name:
+            return "Lingkungan", "Tekanan Barometrik Udara Atmosfer", "bar(a)", "Koreksi ISO & Rasio Kompresi"
+        elif "fuel_lhv" in t_name:
+            return "Bahan Bakar", "Nilai Kalor Bawah Gas Alam (LHV)", "kJ/kg", "Perhitungan Heat Rate & Efisiensi"
+        elif "-RPM" in t_up:
+            u = f"GT-{t_up[0]}" if t_up[0] in "123" else "Turbin"
+            return u, "Kecepatan Putaran Poros Sinkron", "RPM", "Tab Kinerja Peralatan (GT) & Tren Multi-Sensor"
+        elif "SGGFI" in t_up:
+            u = f"GT-{t_up[0]}" if t_up[0] in "123" else "Generator"
+            return u, "Arus Eksitasi / Medan Rotor Generator", "A", "Tab Kinerja Peralatan (GT)"
+        elif "SGAPT" in t_up:
+            u = f"HRSG-{t_up[0]}" if t_up[0] in "123" else "HRSG"
+            sub = "Tekanan Bejana Uap (HP Drum)" if "HP" in t_up or "1001" in t_up else "Tekanan Header / Perpipaan Uap"
+            return u, sub, "bar(g)", "Tab Kinerja Peralatan (HRSG) & Tren Multi-Sensor"
+        elif "SGATE" in t_up:
+            u = f"HRSG-{t_up[0]}" if t_up[0] in "123" else "HRSG"
+            return u, "Temperatur Drum / Superheater / Metal Boiler", "°C", "Tab Kinerja Peralatan (HRSG) & Tren Multi-Sensor"
+        elif "SGAFT" in t_up:
+            u = f"HRSG-{t_up[0]}" if t_up[0] in "123" else "HRSG"
+            desc = "Laju Alir Main Steam" if "1001" in t_up or "2001" in t_up or "3001" in t_up else ("Laju Alir Feedwater" if "1002" in t_up or "2002" in t_up or "3002" in t_up else "Laju Alir Sirkulasi Air")
+            return u, desc, "kg/s", "Perhitungan Inti & Neraca Massa HRSG"
+        elif "GTDL" in t_up:
+            u = f"GT-{t_up[5]}" if len(t_up) > 5 and t_up[5] in "123" else "Gas Turbine"
+            desc = "Daya Listrik Generator GT" if "173" in t_up else ("Suhu Gas Buang Exhaust" if "071" in t_up else ("Tekanan Keluar Kompresor" if "149" in t_up else ("Tekanan Masuk Kompresor" if "075" in t_up else "Sensor Diagnostik Termal/Casing GT")))
+            unit_s = "MW" if "173" in t_up else ("°C" if "071" in t_up or "079" in t_up or "081" in t_up else "bar(a)")
+            return u, desc, unit_s, "Perhitungan Inti GT & Optimasi AI"
+        elif "CFGA" in t_up:
+            u = f"GT-{int(t_up[-1])-3}" if t_up[-1] in "456" else "Fuel System"
+            return u, "Laju Alir Bahan Bakar Gas Alam", "kg/h", "Perhitungan Heat Input & Optimasi AI"
+        elif "STDL" in t_up:
+            desc = "Daya Listrik Generator ST" if "106" in t_up else ("Suhu Uap Masuk Sudu ST" if "025" in t_up else "Tekanan / Temperatur Tingkat ST")
+            unit_s = "MW" if "106" in t_up else ("°C" if "025" in t_up else "bar(a)")
+            return "Steam Turbine (ST)", desc, unit_s, "Perhitungan Inti ST & Kinerja Peralatan"
+        elif "CPS" in t_up:
+            return "Condenser", "Tekanan Vakum Ruang Kondensor", "bar(a)", "Perhitungan Kinerja Kondensor"
+        elif "4HRCTE" in t_up:
+            desc = "Suhu Udara Lingkungan" if "0001" in t_up else ("Suhu Air Pendingin Masuk CW" if "0002" in t_up else ("Suhu Air Pendingin Keluar CW" if "0003" in t_up else "Suhu Saluran Header Pendingin"))
+            return "Balance of Plant (BOP)", desc, "°C", "Perhitungan Kinerja CW & Lingkungan"
+        elif "4HRAFT" in t_up:
+            return "Balance of Plant (BOP)", "Laju Alir Air Pendingin (CW Flow)", "kg/s", "Perhitungan Beban Panas Kondensor"
+        elif "4HRAPT" in t_up:
+            return "Balance of Plant (BOP)", "Tekanan Header Uap Utama", "bar(a)", "Karakteristik Aliran Siklus Uap"
+        elif "4HRATE" in t_up:
+            return "Balance of Plant (BOP)", "Temperatur Header Uap Utama", "°C", "Karakteristik Aliran Siklus Uap"
+        else:
+            return "Plant Auxiliaries", "Sensor Lapangan DCS Tambahan", "eng. unit", "Arsip Data Operasi Mentah & Tren Bebas"
+
     # TABEL TRANSPARANSI SEMUA VARIABEL YANG TERBACA
-    with st.expander("📋 Ringkasan Transparansi: Daftar Seluruh Tag yang Terbaca di Sistem", expanded=True, icon=":material/table_chart:"):
+    with st.expander("📋 Ringkasan Transparansi: Status Seluruh Tag yang Terbaca di Sistem", expanded=True, icon=":material/table_chart:"):
         st.markdown("""
         <div style="font-size:12.5px; color:#475569; margin-bottom:10px;">
-            Berikut adalah daftar seluruh parameter standar pembangkit yang berhasil terhubung dengan sensor di file Anda, lengkap dengan nilai rata-rata operasionalnya:
+            Sistem secara transparan memetakan seluruh parameter penting untuk rumus audit energi sekaligus menjaga seluruh sensor instrumentasi bantu DCS agar dapat ditinjau di tab peralatan dan grafik tren:
         </div>
         """, unsafe_allow_html=True)
         
-        summary_rows = []
-        for code, label, unit, eq in CANONICAL_VARIABLES:
-            mapped_col = current_mapping.get(code)
-            if mapped_col and mapped_col in df.columns:
-                series = pd.to_numeric(df[mapped_col], errors="coerce").dropna()
-                val_disp = f"{float(series.mean()):,.2f}" if not series.empty else "Aktif"
-                source_type = "Perhitungan Mesin" if "plant_" in str(mapped_col) else "Sensor Langsung DCS"
-                summary_rows.append({
-                    "Sub-Sistem": eq,
-                    "Parameter Standar": label,
-                    "Kode Tag / Kolom File": mapped_col,
-                    "Satuan": unit,
-                    "Rata-rata Nilai": val_disp,
-                    "Asal Sumber": source_type,
-                    "Status": "✓ Terhubung"
-                })
-            else:
-                summary_rows.append({
-                    "Sub-Sistem": eq,
-                    "Parameter Standar": label,
-                    "Kode Tag / Kolom File": "-",
-                    "Satuan": unit,
-                    "Rata-rata Nilai": "-",
-                    "Asal Sumber": "Tidak Ada di File",
-                    "Status": "Belum Dipetakan"
-                })
+        tab_canon, tab_all_105 = st.tabs([
+            "39 Parameter Inti Audit Energi (Engine Calculation - 100%)",
+            f"Daftar Seluruh Sensor DCS ({len(df.columns)} Tag Terbaca & Aktif)"
+        ])
         
-        summary_df = pd.DataFrame(summary_rows)
-        st.dataframe(summary_df, width="stretch", height=320)
+        with tab_canon:
+            summary_rows = []
+            for code, label, unit, eq in CANONICAL_VARIABLES:
+                mapped_col = current_mapping.get(code)
+                if mapped_col and mapped_col in df.columns:
+                    series = pd.to_numeric(df[mapped_col], errors="coerce").dropna()
+                    val_disp = f"{float(series.mean()):,.2f}" if not series.empty else "Aktif"
+                    source_type = "Perhitungan Mesin" if "plant_" in str(mapped_col) else "Sensor Langsung DCS"
+                    summary_rows.append({
+                        "Sub-Sistem": eq,
+                        "Parameter Standar": label,
+                        "Kode Tag / Kolom File": mapped_col,
+                        "Satuan": unit,
+                        "Rata-rata Nilai": val_disp,
+                        "Asal Sumber": source_type,
+                        "Status": "✓ Terhubung"
+                    })
+                else:
+                    summary_rows.append({
+                        "Sub-Sistem": eq,
+                        "Parameter Standar": label,
+                        "Kode Tag / Kolom File": "-",
+                        "Satuan": unit,
+                        "Rata-rata Nilai": "-",
+                        "Asal Sumber": "Tidak Ada di File",
+                        "Status": "Belum Dipetakan"
+                    })
+            st.dataframe(pd.DataFrame(summary_rows), width="stretch", height=320, hide_index=True)
+
+        with tab_all_105:
+            all_sensor_rows = []
+            for col_c in df.columns:
+                sub_sys, desc, u_str, page_dest = _classify_tag(col_c)
+                s_col = pd.to_numeric(df[col_c], errors="coerce").dropna()
+                val_mean = f"{float(s_col.mean()):,.2f}" if not s_col.empty else ("Tersimpan" if col_c=="operating_status" else "Datetime")
+                all_sensor_rows.append({
+                    "Sub-Sistem": sub_sys,
+                    "Kode Tag DCS": col_c,
+                    "Deskripsi Teknis": desc,
+                    "Satuan": u_str,
+                    "Rata-rata Aktual": val_mean,
+                    "Distribusi di Halaman Web": page_dest,
+                    "Status": "✓ Aktif & Terbaca"
+                })
+            st.dataframe(pd.DataFrame(all_sensor_rows), width="stretch", height=340, hide_index=True)
 
     st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
     

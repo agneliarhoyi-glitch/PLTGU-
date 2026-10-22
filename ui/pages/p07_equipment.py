@@ -95,34 +95,63 @@ def render(session_state):
         p_gt1 = _val("gt1_power", ["GTDL-19173", "gt1_gross_mw", "gt1_power"])
         pr_gt1 = _val("gt1_comp_p_out", ["GTDL-19149", "gt1_comp_pr"], default=14.2)
         t_gt1 = _val("gt1_exhaust_temp", ["GTDL-19071", "gt1_exhaust_temp_c"])
+        rpm_gt1 = _val("1SGA-RPM", ["1SGA-RPM"], default=3000.0)
         
         # GT-2
         p_gt2 = _val("gt2_power", ["GTDL-29173", "gt2_gross_mw", "gt2_power"])
         pr_gt2 = _val("gt2_comp_p_out", ["GTDL-29149", "gt2_comp_pr"], default=14.1)
         t_gt2 = _val("gt2_exhaust_temp", ["GTDL-29071", "gt2_exhaust_temp_c"])
+        rpm_gt2 = _val("2SGA-RPM", ["2SGA-RPM"], default=3000.0)
         
         # GT-3
         p_gt3 = _val("gt3_power", ["GTDL-39173", "gt3_gross_mw", "gt3_power"])
         pr_gt3 = _val("gt3_comp_p_out", ["GTDL-39149", "gt3_comp_pr"], default=14.3)
         t_gt3 = _val("gt3_exhaust_temp", ["GTDL-39071", "gt3_exhaust_temp_c"])
+        rpm_gt3 = _val("3SGA-RPM", ["3SGA-RPM"], default=3000.0)
 
         with c_gt1:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-1</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="zap", icon_bg="#EFF6FF", icon_color="#2563EB", title="Daya Gross GT-1", value=f"{p_gt1:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator", trend_subtext="aktif", trace_footer="Daya rata-rata periode terpilih")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="gauge", icon_bg="#EFF6FF", icon_color="#2563EB", title="Pressure Ratio GT-1", value=f"{pr_gt1:,.2f}", unit="PR", status_label="Normal", trend_arrow="•", trend_pct="Kompresor", trend_subtext="P_out / P_in", trace_footer="Kompresi aksial tingkat")
+            st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+            render_mockup_kpi_card(icon_key="activity", icon_bg="#EFF6FF", icon_color="#2563EB", title="Kecepatan Poros GT-1", value=f"{rpm_gt1:,.1f}", unit="RPM", status_label="Normal", trend_arrow="•", trend_pct="1SGA-RPM", trend_subtext="50 Hz grid", trace_footer="Kecepatan putaran poros sinkron")
 
         with c_gt2:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-2']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-2</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="zap", icon_bg="#F0FDFA", icon_color="#0D9488", title="Daya Gross GT-2", value=f"{p_gt2:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator", trend_subtext="aktif", trace_footer="Daya rata-rata periode terpilih")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="gauge", icon_bg="#F0FDFA", icon_color="#0D9488", title="Pressure Ratio GT-2", value=f"{pr_gt2:,.2f}", unit="PR", status_label="Normal", trend_arrow="•", trend_pct="Kompresor", trend_subtext="P_out / P_in", trace_footer="Kompresi aksial tingkat")
+            st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+            render_mockup_kpi_card(icon_key="activity", icon_bg="#F0FDFA", icon_color="#0D9488", title="Kecepatan Poros GT-2", value=f"{rpm_gt2:,.1f}", unit="RPM", status_label="Normal", trend_arrow="•", trend_pct="2SGA-RPM", trend_subtext="50 Hz grid", trace_footer="Kecepatan putaran poros sinkron")
 
         with c_gt3:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-3']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-3</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="zap", icon_bg="#FFFBEB", icon_color="#D97706", title="Daya Gross GT-3", value=f"{p_gt3:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator", trend_subtext="aktif", trace_footer="Daya rata-rata periode terpilih")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="gauge", icon_bg="#FFFBEB", icon_color="#D97706", title="Pressure Ratio GT-3", value=f"{pr_gt3:,.2f}", unit="PR", status_label="Normal", trend_arrow="•", trend_pct="Kompresor", trend_subtext="P_out / P_in", trace_footer="Kompresi aksial tingkat")
+            st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+            render_mockup_kpi_card(icon_key="activity", icon_bg="#FFFBEB", icon_color="#D97706", title="Kecepatan Poros GT-3", value=f"{rpm_gt3:,.1f}", unit="RPM", status_label="Normal", trend_arrow="•", trend_pct="3SGA-RPM", trend_subtext="50 Hz grid", trace_footer="Kecepatan putaran poros sinkron")
+
+        # Expander Sensor Tambahan GT (Generator Field & Aux Instruments)
+        gt_aux_tags = [c for c in ["1SGGFI-1001", "1SGGFI-1002", "2SGGFI-2001", "2SGGFI-2002", "3SGGFI-3001", "3SGGFI-3002", "GTDL-19079", "GTDL-19081", "GTDL-29079", "GTDL-29081", "GTDL-39079", "GTDL-39081"] if c in df.columns]
+        if gt_aux_tags:
+            with st.expander("Sensor Diagnostik Tambahan Gas Turbine (Arus Eksitasi & Temperatur Casing)", icon=":material/speed:", expanded=False):
+                aux_data = []
+                for t in gt_aux_tags:
+                    s = pd.to_numeric(df[t], errors="coerce").dropna()
+                    unit_str = "A" if "GFI" in t else ("°C" if "079" in t or "081" in t else "eng. unit")
+                    desc_str = "Arus Eksitasi / Medan Generator" if "GFI" in t else "Temperatur Casing / Sudu Tingkat"
+                    aux_data.append({
+                        "Tag DCS": t,
+                        "Sub-Sistem": "GT-1" if t.startswith("1") or "-19" in t else ("GT-2" if t.startswith("2") or "-29" in t else "GT-3"),
+                        "Deskripsi Instrumen": desc_str,
+                        "Satuan": unit_str,
+                        "Rata-rata": f"{float(s.mean()):,.2f}" if not s.empty else "-",
+                        "Min": f"{float(s.min()):,.2f}" if not s.empty else "-",
+                        "Maks": f"{float(s.max()):,.2f}" if not s.empty else "-"
+                    })
+                st.dataframe(pd.DataFrame(aux_data), width="stretch", hide_index=True)
 
         # Grafik Perbandingan Pressure Ratio Kompresor
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
@@ -142,7 +171,7 @@ def render(session_state):
     with tab_hrsg:
         render_section_header(
             title="Kinerja Sisi Gas & Sisi Air/Uap HRSG (1-3)",
-            subtitle="Pemisahan analisis termal gas buang dan laju produksi main steam per boiler",
+            subtitle="Pemisahan analisis termal gas buang, tekanan HP drum, dan laju produksi main steam per boiler",
             icon_key="flame",
             badge_text="3 x HRSG Units",
             icon_bg="#FEF2F2",
@@ -150,18 +179,23 @@ def render(session_state):
         )
         
         c_h1, c_h2, c_h3 = st.columns(3, gap="medium")
-        h1_steam = _val("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"])
-        h1_stack = _val("hrsg1_stack_temp", ["hrsg1_stack_temp_c", "hrsg1_stack_temp"])
+        h1_steam = _val("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow", "1SGAFT-1001"])
+        h1_stack = _val("hrsg1_stack_temp", ["hrsg1_stack_temp_c", "hrsg1_stack_temp", "1SGATE-1019"])
+        h1_drum_p = _val("1SGAPT-100HP", ["1SGAPT-100HP", "1SGAPT-1001"], default=54.0)
         
-        h2_steam = _val("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"])
-        h2_stack = _val("hrsg2_stack_temp", ["hrsg2_stack_temp_c", "hrsg2_stack_temp"])
+        h2_steam = _val("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow", "2SGAFT-2001"])
+        h2_stack = _val("hrsg2_stack_temp", ["hrsg2_stack_temp_c", "hrsg2_stack_temp", "2SGATE-2019"])
+        h2_drum_p = _val("2SGAPT-100HP", ["2SGAPT-100HP", "2SGAPT-2001"], default=53.8)
         
-        h3_steam = _val("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow"])
-        h3_stack = _val("hrsg3_stack_temp", ["hrsg3_stack_temp_c", "hrsg3_stack_temp"])
+        h3_steam = _val("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow", "3SGAFT-3001"])
+        h3_stack = _val("hrsg3_stack_temp", ["hrsg3_stack_temp_c", "hrsg3_stack_temp", "3SGATE-3019"])
+        h3_drum_p = _val("3SGAPT-100HP", ["3SGAPT-100HP", "3SGAPT-3001"], default=54.2)
 
         with c_h1:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-1</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#EFF6FF", icon_color="#2563EB", title="Main Steam HRSG-1", value=f"{h1_steam:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Steam Flow", trend_subtext="uap utama", trace_footer="Produksi uap HP HRSG-1")
+            st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+            render_mockup_kpi_card(icon_key="gauge", icon_bg="#EFF6FF", icon_color="#2563EB", title="Tekanan HP Drum 1", value=f"{h1_drum_p:,.1f}", unit="bar(g)", status_label="Normal", trend_arrow="•", trend_pct="1SGAPT-100HP", trend_subtext="drum uap", trace_footer="Tekanan bejana uap tingkat tinggi")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="wind", icon_bg="#F8FAFC", icon_color="#475569", title="Stack Gas Temp", value=f"{h1_stack:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Cerobong", trend_subtext="stack 1", trace_footer="Temperatur gas buang akhir")
 
@@ -169,19 +203,43 @@ def render(session_state):
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-2']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-2</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#ECFDF5", icon_color="#059669", title="Main Steam HRSG-2", value=f"{h2_steam:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Steam Flow", trend_subtext="uap utama", trace_footer="Produksi uap HP HRSG-2")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+            render_mockup_kpi_card(icon_key="gauge", icon_bg="#ECFDF5", icon_color="#059669", title="Tekanan HP Drum 2", value=f"{h2_drum_p:,.1f}", unit="bar(g)", status_label="Normal", trend_arrow="•", trend_pct="2SGAPT-100HP", trend_subtext="drum uap", trace_footer="Tekanan bejana uap tingkat tinggi")
+            st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="wind", icon_bg="#F8FAFC", icon_color="#475569", title="Stack Gas Temp", value=f"{h2_stack:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Cerobong", trend_subtext="stack 2", trace_footer="Temperatur gas buang akhir")
 
         with c_h3:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-3']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-3</div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#FFFBEB", icon_color="#D97706", title="Main Steam HRSG-3", value=f"{h3_steam:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Steam Flow", trend_subtext="uap utama", trace_footer="Produksi uap HP HRSG-3")
             st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
+            render_mockup_kpi_card(icon_key="gauge", icon_bg="#FFFBEB", icon_color="#D97706", title="Tekanan HP Drum 3", value=f"{h3_drum_p:,.1f}", unit="bar(g)", status_label="Normal", trend_arrow="•", trend_pct="3SGAPT-100HP", trend_subtext="drum uap", trace_footer="Tekanan bejana uap tingkat tinggi")
+            st.markdown("<div style='height:6px;'></div>", unsafe_allow_html=True)
             render_mockup_kpi_card(icon_key="wind", icon_bg="#F8FAFC", icon_color="#475569", title="Stack Gas Temp", value=f"{h3_stack:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Cerobong", trend_subtext="stack 3", trace_footer="Temperatur gas buang akhir")
+
+        # Expander Rincian Sensor Tekanan Drum & Temperatur Metal HRSG
+        hrsg_extra_tags = [c for c in df.columns if any(c.startswith(p) for p in ["1SGAPT-", "2SGAPT-", "3SGAPT-", "1SGATE-", "2SGATE-", "3SGATE-"])]
+        if hrsg_extra_tags:
+            with st.expander(f"Profil Multi-Titik Sensor HRSG 1-3 ({len(hrsg_extra_tags)} Tag Tekanan & Temperatur Terbaca)", icon=":material/thermometer:", expanded=False):
+                hrsg_summary = []
+                for t in hrsg_extra_tags:
+                    s = pd.to_numeric(df[t], errors="coerce").dropna()
+                    unit_str = "bar(g)" if "PT" in t else "°C"
+                    sub_unit = "HRSG-1" if t.startswith("1") else ("HRSG-2" if t.startswith("2") else "HRSG-3")
+                    hrsg_summary.append({
+                        "Tag DCS": t,
+                        "Unit": sub_unit,
+                        "Parameter": "Tekanan Drum / Header" if "PT" in t else "Temperatur Drum / Superheater",
+                        "Satuan": unit_str,
+                        "Rata-rata": f"{float(s.mean()):,.2f}" if not s.empty else "-",
+                        "Min": f"{float(s.min()):,.2f}" if not s.empty else "-",
+                        "Maks": f"{float(s.max()):,.2f}" if not s.empty else "-"
+                    })
+                st.dataframe(pd.DataFrame(hrsg_summary), width="stretch", height=260, hide_index=True)
 
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
         fig_steam = create_styled_plot("Profil Laju Alir Uap Utama (Main Steam Flow) 3 HRSG", x_label="Waktu", y_label="Laju Alir (kg/s)")
-        col_s1 = _col("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"])
-        col_s2 = _col("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"])
-        col_s3 = _col("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow"])
+        col_s1 = _col("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow", "1SGAFT-1001"])
+        col_s2 = _col("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow", "2SGAFT-2001"])
+        col_s3 = _col("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow", "3SGAFT-3001"])
         if col_s1 and col_s1 in plot_df.columns:
             fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_s1], name="HRSG-1 Steam", line={"color": EQUIPMENT_COLORS["HRSG-1"]}))
         if col_s2 and col_s2 in plot_df.columns:
@@ -204,18 +262,35 @@ def render(session_state):
         st_mw = _val("st_power", ["STDL-20106", "st_gross_mw", "st_power", "st_load"])
         default_flow = (h1_steam + h2_steam + h3_steam) if (h1_steam or h2_steam or h3_steam) else 0.0
         st_flow = _val("st_inlet_steam_flow", ["st_inlet_steam_flow_kg_s", "st_inlet_flow"], default=default_flow)
-        ms_p = _val("main_steam_p", ["main_steam_pressure_bar", "main_steam_p", "ms_press_bar"])
-        ms_t = _val("main_steam_t", ["main_steam_temp_c", "main_steam_t", "ms_temp_c"])
+        ms_p = _val("main_steam_p", ["main_steam_pressure_bar", "main_steam_p", "ms_press_bar", "4HRAPT-0005"])
+        ms_t = _val("main_steam_t", ["main_steam_temp_c", "main_steam_t", "ms_temp_c", "4HRATE-0002", "STDL-20025"])
+        st_t_in = _val("STDL-20025", ["STDL-20025"], default=516.5)
 
         c_st1, c_st2, c_st3, c_st4 = st.columns(4)
         with c_st1:
-            render_mockup_kpi_card(icon_key="zap", icon_bg="#FAF5FF", icon_color="#9333EA", title="Daya Gross ST", value=f"{st_mw:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="Generator ST", trend_subtext="aktif", trace_footer="Daya gross rata-rata ST")
+            render_mockup_kpi_card(icon_key="zap", icon_bg="#FAF5FF", icon_color="#9333EA", title="Daya Gross ST", value=f"{st_mw:,.1f}", unit="MW", status_label="Normal", trend_arrow="•", trend_pct="STDL-20106", trend_subtext="aktif", trace_footer="Daya gross rata-rata ST")
         with c_st2:
             render_mockup_kpi_card(icon_key="droplet", icon_bg="#EFF6FF", icon_color="#2563EB", title="Total Steam ST", value=f"{st_flow:,.1f}", unit="kg/s", status_label="Normal", trend_arrow="•", trend_pct="Aggregated", trend_subtext="inlet", trace_footer="∑ Steam HRSG 1-3 masuk ST")
         with c_st3:
-            render_mockup_kpi_card(icon_key="gauge", icon_bg="#F0FDFA", icon_color="#0D9488", title="Tekanan Uap Utama", value=f"{ms_p:,.1f}", unit="bar(a)", status_label="Normal", trend_arrow="•", trend_pct="HP Header", trend_subtext="tekanan", trace_footer="Header uap tekanan tinggi")
+            render_mockup_kpi_card(icon_key="gauge", icon_bg="#F0FDFA", icon_color="#0D9488", title="Tekanan Uap Utama", value=f"{ms_p:,.1f}", unit="bar(a)", status_label="Normal", trend_arrow="•", trend_pct="4HRAPT-0005", trend_subtext="tekanan", trace_footer="Header uap tekanan tinggi")
         with c_st4:
-            render_mockup_kpi_card(icon_key="flame", icon_bg="#FFFBEB", icon_color="#D97706", title="Temperatur Uap Utama", value=f"{ms_t:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="Superheat", trend_subtext="temperatur", trace_footer="Header uap temperatur tinggi")
+            render_mockup_kpi_card(icon_key="flame", icon_bg="#FFFBEB", icon_color="#D97706", title="Temperatur Inlet ST", value=f"{st_t_in:,.1f}", unit="°C", status_label="Normal", trend_arrow="•", trend_pct="STDL-20025", trend_subtext="inlet casing", trace_footer="Suhu uap masuk sudu ST")
+
+        # Expander Sensor Bantu Steam Turbine
+        st_extra_tags = [c for c in ["STDL-20025", "STDL-20049", "STDL-20094", "STDL-20096"] if c in df.columns]
+        if st_extra_tags:
+            with st.expander("Sensor Instrumen Tambahan Steam Turbine (STDL)", icon=":material/tune:", expanded=False):
+                st_data = []
+                for t in st_extra_tags:
+                    s = pd.to_numeric(df[t], errors="coerce").dropna()
+                    st_data.append({
+                        "Tag DCS": t,
+                        "Deskripsi": "Temperatur / Tekanan Tingkat Sudu ST",
+                        "Rata-rata": f"{float(s.mean()):,.2f}" if not s.empty else "-",
+                        "Min": f"{float(s.min()):,.2f}" if not s.empty else "-",
+                        "Maks": f"{float(s.max()):,.2f}" if not s.empty else "-"
+                    })
+                st.dataframe(pd.DataFrame(st_data), width="stretch", hide_index=True)
 
         # Entalpi uap IAPWS-IF97
         if ms_p > 0 and ms_t > 0:
@@ -259,3 +334,22 @@ def render(session_state):
         with c_cd4:
             duty_mw = (q_cw_res.value / 1000.0) if q_cw_res and q_cw_res.value else 0.0
             render_mockup_kpi_card(icon_key="flame", icon_bg="#FFFBEB", icon_color="#D97706", title="Heat Duty CW", value=f"{duty_mw:,.1f}", unit="MWth", status_label="Normal", trend_arrow="•", trend_pct="Pelepasan", trend_subtext="panas", trace_footer="m_dot * Cp * ΔT (Air Pendingin)")
+
+        # Expander Sensor Tambahan Saluran Header & Air Pendingin
+        bop_extra_tags = [c for c in ["4HRATE-0002", "4HRATE-0003", "4HRCTE-0001", "4HRCTE-0004", "4HRAPT-0005"] if c in df.columns]
+        if bop_extra_tags:
+            with st.expander("Sensor Tambahan Saluran Uap Header & Sirkulasi Pendingin (4HR)", icon=":material/water_drop:", expanded=False):
+                bop_data = []
+                for t in bop_extra_tags:
+                    s = pd.to_numeric(df[t], errors="coerce").dropna()
+                    unit_str = "°C" if "TE" in t else ("bar(a)" if "PT" in t else "eng. unit")
+                    bop_data.append({
+                        "Tag DCS": t,
+                        "Sub-Sistem": "Balance of Plant (BOP)",
+                        "Deskripsi": "Temperatur Header / Suhu Menara Pendingin" if "TE" in t else "Tekanan Header Uap",
+                        "Satuan": unit_str,
+                        "Rata-rata": f"{float(s.mean()):,.2f}" if not s.empty else "-",
+                        "Min": f"{float(s.min()):,.2f}" if not s.empty else "-",
+                        "Maks": f"{float(s.max()):,.2f}" if not s.empty else "-"
+                    })
+                st.dataframe(pd.DataFrame(bop_data), width="stretch", hide_index=True)

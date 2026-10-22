@@ -161,3 +161,47 @@ def render(session_state):
                 
         if stat_rows:
             st.dataframe(pd.DataFrame(stat_rows), width="stretch")
+
+    # 4. PENJELAJAH TREN BEBAS MULTI-SENSOR DCS (105 TAG DCS)
+    st.markdown("<div style='height: 16px;'></div>", unsafe_allow_html=True)
+    render_section_header(
+        title="Penjelajah Tren Bebas Multi-Sensor (Eksplorasi Seluruh Tag DCS)",
+        subtitle="Visualisasikan dan periksa tren waktu riil untuk setiap parameter dari seluruh sensor yang tersedia di dataset",
+        icon_key="activity",
+        badge_text=f"{len(df.columns)} Tag Tersedia",
+        icon_bg="#F0FDF4",
+        icon_color="#16A34A"
+    )
+
+    numeric_cols = [c for c in df.columns if c != ts_col and pd.api.types.is_numeric_dtype(df[c])]
+    if numeric_cols:
+        default_tag = "1SGA-RPM" if "1SGA-RPM" in numeric_cols else numeric_cols[0]
+        selected_tag = st.selectbox(
+            "Pilih Tag Sensor DCS untuk Dianalisis:",
+            options=numeric_cols,
+            index=numeric_cols.index(default_tag) if default_tag in numeric_cols else 0,
+            key="custom_sensor_explorer_select"
+        )
+        
+        if selected_tag:
+            tag_series = pd.to_numeric(df[selected_tag], errors="coerce").dropna()
+            if not tag_series.empty:
+                col_m1, col_m2, col_m3, col_m4 = st.columns(4)
+                with col_m1:
+                    st.metric("Rata-rata Nilai", f"{tag_series.mean():,.2f}")
+                with col_m2:
+                    st.metric("Nilai Minimum", f"{tag_series.min():,.2f}")
+                with col_m3:
+                    st.metric("Nilai Maksimum", f"{tag_series.max():,.2f}")
+                with col_m4:
+                    st.metric("Standar Deviasi (σ)", f"{tag_series.std():,.2f}")
+                
+                # Plot series
+                fig_sensor = create_styled_plot(f"Tren Operasi Sensor: {selected_tag}", x_label="Waktu", y_label=selected_tag)
+                fig_sensor.add_trace(go.Scatter(
+                    x=sample_df[ts_col],
+                    y=sample_df[selected_tag],
+                    name=selected_tag,
+                    line={"color": "#2563EB", "width": 1.5}
+                ))
+                st.plotly_chart(fig_sensor, width="stretch")
