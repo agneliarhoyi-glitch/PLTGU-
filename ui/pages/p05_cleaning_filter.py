@@ -34,8 +34,17 @@ def render(session_state):
         render_empty_dataset_notice(mode="card", key_suffix="p05")
         return
 
+    def _find_power_col():
+        c = mapping.get("plant_net")
+        if c and c in raw_df.columns:
+            return c
+        for fb in ["plant_net_power_mw", "plant_net", "plant_gross_mw", "st_gross_mw", "gt1_gross_mw", "GTDL-19173", "STDL-20106"]:
+            if fb in raw_df.columns:
+                return fb
+        return None
+
     ts_col = mapping.get("timestamp", "timestamp")
-    power_col = mapping.get("plant_net", "plant_net_power_mw")
+    power_col = _find_power_col() or "plant_net_power_mw"
     
     render_section_header(
         title="Konfigurasi Aturan Pembersihan & Filter Kondisi",
@@ -72,12 +81,19 @@ def render(session_state):
     if date_range and len(date_range) == 2:
         df_preview = filter_by_date_range(df_preview, timestamp_col=ts_col, start_date=str(date_range[0]), end_date=str(date_range[1]))
         
+    detected_int = 5.0
+    if ts_col in df_preview.columns:
+        diffs = pd.to_datetime(df_preview[ts_col], errors="coerce").dropna().diff().dt.total_seconds().dropna()
+        valid_d = diffs[(diffs > 0) & (diffs < 7200)]
+        if not valid_d.empty and valid_d.median() > 0:
+            detected_int = float(valid_d.median() / 60.0)
+
     df_steady, steady_mask = filter_steady_state_periods(
         df_preview, 
         power_col=power_col, 
         min_load_mw=min_load, 
         max_ramp_rate_mw_per_min=max_ramp, 
-        interval_min=5.0
+        interval_min=detected_int
     )
 
     retention_pct = round(len(df_steady) / len(raw_df) * 100.0, 1) if len(raw_df) > 0 else 0
