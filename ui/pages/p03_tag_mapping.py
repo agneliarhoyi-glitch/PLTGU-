@@ -160,6 +160,12 @@ def render(session_state):
     columns_available = ["(Tidak Dipetakan)"] + list(df.columns)
     current_mapping = session_state.get("tag_mapping", {})
     
+    # Auto-detect tag secara proaktif jika mapping masih sedikit atau belum lengkap
+    detected_mapping = auto_detect_tag_mapping(df.columns, current_mapping)
+    if len(detected_mapping) > len(current_mapping):
+        current_mapping = detected_mapping
+        session_state["tag_mapping"] = current_mapping
+    
     # Hitung metrik mapping
     total_canonical = len(CANONICAL_VARIABLES)
     valid_mapped = [c for c, _, _, _ in CANONICAL_VARIABLES if current_mapping.get(c) in df.columns]
@@ -178,8 +184,8 @@ def render(session_state):
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
                     <span style="font-size:15px; font-weight:800; color:#0F172A;">Kelengkapan Skema Variabel:</span>
                     <span style="font-size:13px; font-weight:800; color:#2563EB;">{mapped_count} / {total_canonical} Tag ({pct_complete:.1f}%)</span>
-                    <span style="background:{'#ECFDF5' if pct_complete == 100 else '#FFFBEB'}; color:{'#059669' if pct_complete == 100 else '#D97706'}; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; border:1px solid {'#A7F3D0' if pct_complete == 100 else '#FDE68A'};">
-                        {'✓ Lengkap' if pct_complete == 100 else 'Perlu Penyesuaian'}
+                    <span style="background:{'#ECFDF5' if pct_complete >= 80 else '#FFFBEB'}; color:{'#059669' if pct_complete >= 80 else '#D97706'}; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; border:1px solid {'#A7F3D0' if pct_complete >= 80 else '#FDE68A'};">
+                        {'✓ Terpetakan Baik' if pct_complete >= 50 else 'Perlu Penyesuaian'}
                     </span>
                 </div>
                 <div class="mapping-progress-track">
@@ -199,35 +205,7 @@ def render(session_state):
     
     with btn_col1:
         if st.button("Auto-Match Tag Cerdas", icon=":material/bolt:", width="stretch", type="primary"):
-            # 1. Muat dari default json mapping jika ada
-            default_json_path = "data/mappings/default_mapping_pltgu.json"
-            new_map = current_mapping.copy()
-            match_counter = 0
-            
-            if os.path.exists(default_json_path):
-                try:
-                    with open(default_json_path, "r") as f:
-                        preset = json.load(f).get("tags", {})
-                    for code, dcs_col in preset.items():
-                        if dcs_col in df.columns:
-                            new_map[code] = dcs_col
-                            match_counter += 1
-                except Exception:
-                    pass
-                    
-            # 2. Smart regex/alias match untuk tag yang belum dapat
-            for code, _, _, _ in CANONICAL_VARIABLES:
-                if code not in new_map or new_map[code] not in df.columns:
-                    aliases = SMART_ALIASES.get(code, [code])
-                    for alias in aliases:
-                        for col in df.columns:
-                            if col.lower() == alias.lower():
-                                new_map[code] = col
-                                match_counter += 1
-                                break
-                        if code in new_map and new_map[code] in df.columns:
-                            break
-                            
+            new_map = auto_detect_tag_mapping(df.columns, current_mapping)
             session_state["tag_mapping"] = new_map
             st.toast(f"✅ Auto-Match Berhasil! {len(new_map)} variabel kanonikal terpetakan.", icon="⚡")
             st.rerun()

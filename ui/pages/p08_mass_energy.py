@@ -56,6 +56,19 @@ def render(session_state):
         st.info("Harap centang konfirmasi boundary di atas untuk menampilkan hasil perhitungan neraca.", icon=":material/info:")
         return
 
+    def _val(canon_key, fallback_names, default=0.0):
+        col = mapping.get(canon_key)
+        if col and col in df.columns:
+            s = pd.to_numeric(df[col], errors="coerce").dropna()
+            if not s.empty:
+                return float(s.mean())
+        for f in fallback_names:
+            if f in df.columns:
+                s = pd.to_numeric(df[f], errors="coerce").dropna()
+                if not s.empty:
+                    return float(s.mean())
+        return default
+
     # 1. EVALUASI NERACA MASSA SIKLUS UAP
     if selected_boundary == boundaries[0]:
         render_section_header(
@@ -67,10 +80,10 @@ def render(session_state):
             icon_color="#2563EB"
         )
         
-        h1_s = df["hrsg1_main_steam_flow_kg_s"].mean() if "hrsg1_main_steam_flow_kg_s" in df.columns else 0.0
-        h2_s = df["hrsg2_main_steam_flow_kg_s"].mean() if "hrsg2_main_steam_flow_kg_s" in df.columns else 0.0
-        h3_s = df["hrsg3_main_steam_flow_kg_s"].mean() if "hrsg3_main_steam_flow_kg_s" in df.columns else 0.0
-        st_s = df["st_inlet_steam_flow_kg_s"].mean() if "st_inlet_steam_flow_kg_s" in df.columns else 0.0
+        h1_s = _val("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"], default=35.0)
+        h2_s = _val("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"], default=35.0)
+        h3_s = _val("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow"], default=35.0)
+        st_s = _val("st_inlet_steam_flow", ["st_inlet_steam_flow_kg_s", "st_inlet_flow"], default=(h1_s + h2_s + h3_s))
         
         inlets = {"Main Steam HRSG-1": h1_s, "Main Steam HRSG-2": h2_s, "Main Steam HRSG-3": h3_s}
         outlets = {"Steam Masuk ST": st_s}
@@ -111,15 +124,15 @@ def render(session_state):
             icon_color="#EF4444"
         )
         
-        t_in = df["gt1_exhaust_temp_c"].mean() if "gt1_exhaust_temp_c" in df.columns else 540.0
-        t_out = df["hrsg1_stack_temp_c"].mean() if "hrsg1_stack_temp_c" in df.columns else 115.0
+        t_in = _val("gt1_exhaust_temp", ["GTDL-19071", "gt1_exhaust_temp_c"], default=540.0)
+        t_out = _val("hrsg1_stack_temp", ["hrsg1_stack_temp_c", "hrsg1_stack_temp"], default=115.0)
         flue_flow = 278.0
-        s_flow = df["hrsg1_main_steam_flow_kg_s"].mean() if "hrsg1_main_steam_flow_kg_s" in df.columns else 35.0
-        fw_flow = df["hrsg1_feedwater_flow_kg_s"].mean() if "hrsg1_feedwater_flow_kg_s" in df.columns else 35.0
-        ms_p = df["main_steam_pressure_bar"].mean() if "main_steam_pressure_bar" in df.columns else 65.0
-        ms_t = df["main_steam_temp_c"].mean() if "main_steam_temp_c" in df.columns else 510.0
-        fw_p = df["feedwater_pressure_bar"].mean() if "feedwater_pressure_bar" in df.columns else 75.0
-        fw_t = df["feedwater_temp_c"].mean() if "feedwater_temp_c" in df.columns else 135.0
+        s_flow = _val("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"], default=35.0)
+        fw_flow = _val("hrsg1_fw_flow", ["hrsg1_feedwater_flow_kg_s", "hrsg1_fw_flow"], default=s_flow)
+        ms_p = _val("main_steam_p", ["main_steam_pressure_bar", "main_steam_p"], default=65.0)
+        ms_t = _val("main_steam_t", ["main_steam_temp_c", "main_steam_t"], default=510.0)
+        fw_p = _val("feedwater_p", ["feedwater_pressure_bar"], default=75.0)
+        fw_t = _val("feedwater_t", ["feedwater_temp_c"], default=135.0)
 
         res_hrsg = evaluate_energy_balance_hrsg(
             gas_inlet_t_c=t_in,
@@ -157,14 +170,14 @@ def render(session_state):
             icon_color="#0D9488"
         )
         
-        cw_in = df["cw_inlet_temp_c"].mean() if "cw_inlet_temp_c" in df.columns else 28.0
-        cw_out = df["cw_outlet_temp_c"].mean() if "cw_outlet_temp_c" in df.columns else 36.5
-        cw_m = df["cw_flow_kg_s"].mean() if "cw_flow_kg_s" in df.columns else 8500.0
+        cw_in = _val("cw_in_t", ["4HRCTE-0002", "cw_inlet_temp_c", "cw_in_t"], default=28.0)
+        cw_out = _val("cw_out_t", ["4HRCTE-0003", "cw_outlet_temp_c", "cw_out_t"], default=36.5)
+        cw_m = _val("cw_flow", ["cw_flow_kg_s", "cw_flow"], default=8500.0)
         q_cw = calc_cooling_water_duty(cw_m, cw_in, cw_out).value
         
-        s_flow = df["st_inlet_steam_flow_kg_s"].mean() if "st_inlet_steam_flow_kg_s" in df.columns else 105.0
-        p_cond = df["condenser_pressure_bar"].mean() if "condenser_pressure_bar" in df.columns else 0.075
-        t_hw = df["hotwell_temp_c"].mean() if "hotwell_temp_c" in df.columns else 40.0
+        s_flow = _val("st_inlet_steam_flow", ["st_inlet_steam_flow_kg_s", "st_inlet_flow"], default=105.0)
+        p_cond = _val("condenser_p", ["condenser_pressure_bar", "condenser_p"], default=0.075)
+        t_hw = _val("hotwell_temp", ["hotwell_temp_c"], default=40.0)
         
         res_cond = evaluate_condenser_balance(q_cw, s_flow, p_cond, t_hw)
         

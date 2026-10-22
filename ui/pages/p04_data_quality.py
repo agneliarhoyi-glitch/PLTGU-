@@ -37,7 +37,7 @@ def render(session_state):
     
     # Jalankan analisis kualitas data
     with st.spinner("Memeriksa kualitas data sensor..."):
-        report = analyze_data_quality(df, timestamp_col=ts_col, expected_interval_min=5.0, tag_mapping=mapping)
+        report = analyze_data_quality(df, timestamp_col=ts_col, expected_interval_min=None, tag_mapping=mapping)
         session_state["coverage_pct"] = report.coverage_pct
 
     # 4 KARTU KPI KUALITAS DATA MODERN
@@ -55,7 +55,7 @@ def render(session_state):
             trend_pct="100% Target",
             trend_direction="up",
             trend_subtext=f"{len(df):,} / {report.expected_intervals:,} titik",
-            trace_footer="Interval target 5 menit • Tanpa Imputasi Buatan"
+            trace_footer="Integritas Deret Waktu • Tanpa Imputasi Buatan"
         )
     with c2:
         render_mockup_kpi_card(
@@ -82,10 +82,10 @@ def render(session_state):
             unit="kejadian",
             status_label="Normal" if report.gap_count == 0 else "Warning",
             trend_arrow="•",
-            trend_pct="Frekuensi 5-Menit",
+            trend_pct="Kontinuitas",
             trend_direction="up",
-            trend_subtext="konsisten",
-            trace_footer="Threshold gap: Δt > 7.5 menit (Non-interpolasi)"
+            trend_subtext="deret waktu",
+            trace_footer="Threshold gap: Δt > 1.5x interval (Non-interpolasi)"
         )
     with c4:
         render_mockup_kpi_card(

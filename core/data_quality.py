@@ -28,7 +28,7 @@ PHYSICAL_BOUNDS = {
 
 def analyze_data_quality(df: pd.DataFrame, 
                          timestamp_col: str = "timestamp", 
-                         expected_interval_min: float = 5.0,
+                         expected_interval_min: Optional[float] = None,
                          tag_mapping: Dict[str, str] = None) -> QualityReport:
     """
     Melakukan pemeriksaan kualitas data menyeluruh tanpa memodifikasi data mentah.
@@ -69,8 +69,19 @@ def analyze_data_quality(df: pd.DataFrame,
     if len(valid_ts) > 1:
         t_start = valid_ts.iloc[0]
         t_end = valid_ts.iloc[-1]
-        total_span_min = (t_end - t_start).total_seconds() / 60.0
-        expected_points = int(np.floor(total_span_min / expected_interval_min)) + 1
+        total_span_min = max(0.0, (t_end - t_start).total_seconds() / 60.0)
+        
+        # Deteksi interval data aktual secara cerdas jika tidak diberikan secara eksplisit
+        if expected_interval_min is None or expected_interval_min <= 0:
+            diffs_sec = valid_ts.diff().dt.total_seconds().dropna()
+            valid_diffs = diffs_sec[(diffs_sec > 0) & (diffs_sec < 7200)]
+            if not valid_diffs.empty:
+                actual_int_min = float(valid_diffs.median() / 60.0)
+                expected_interval_min = actual_int_min if actual_int_min > 0 else 5.0
+            else:
+                expected_interval_min = 5.0
+
+        expected_points = int(np.floor(total_span_min / max(0.01, expected_interval_min))) + 1
         report.expected_intervals = expected_points
         report.coverage_pct = round(min(100.0, (len(valid_ts) / max(1, expected_points)) * 100.0), 2)
         

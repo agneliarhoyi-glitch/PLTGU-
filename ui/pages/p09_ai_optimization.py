@@ -51,21 +51,49 @@ def render(session_state):
 
     ts_col = mapping.get("timestamp", "timestamp")
     
+    def _resolve_feature_cols(pairs):
+        res = []
+        for canon, fallbacks in pairs:
+            c = mapping.get(canon)
+            if c and c in df.columns:
+                res.append(c)
+                continue
+            for fb in fallbacks:
+                if fb in df.columns:
+                    res.append(fb)
+                    break
+        return res
+
     # Inisialisasi temuan di session state jika belum ada
     if "ai_findings" not in session_state or session_state.get("re_run_ai", False):
         with st.spinner("Menjalankan model deteksi anomali pada fitur operasi..."):
             detector = AnomalyDetector(contamination=0.02, persistence_window=3)
             
             # Deteksi pada GT-2 (yang memiliki simulated compressor fouling)
-            gt2_features = ["gt2_gross_mw", "gt2_comp_pr", "gt2_exhaust_temp_c", "gt2_fuel_flow_kg_h"]
+            gt2_features = _resolve_feature_cols([
+                ("gt2_power", ["GTDL-29173", "gt2_gross_mw", "gt2_power"]),
+                ("gt2_comp_p_out", ["GTDL-29149", "gt2_comp_pr"]),
+                ("gt2_exhaust_temp", ["GTDL-29071", "gt2_exhaust_temp_c"]),
+                ("gt2_fuel_flow", ["CFGAAI-0005", "GTDL-29161", "gt2_fuel_flow_kg_h", "gt2_fuel_flow_kg_s"])
+            ])
             findings_gt2 = detector.detect_anomalies(df, timestamp_col=ts_col, feature_cols=gt2_features, equipment_name="GT-2")
             
             # Deteksi pada GT-1
-            gt1_features = ["gt1_gross_mw", "gt1_comp_pr", "gt1_exhaust_temp_c", "gt1_fuel_flow_kg_h"]
+            gt1_features = _resolve_feature_cols([
+                ("gt1_power", ["GTDL-19173", "gt1_gross_mw", "gt1_power"]),
+                ("gt1_comp_p_out", ["GTDL-19149", "gt1_comp_pr"]),
+                ("gt1_exhaust_temp", ["GTDL-19071", "gt1_exhaust_temp_c"]),
+                ("gt1_fuel_flow", ["CFGAAI-0004", "GTDL-19161", "gt1_fuel_flow_kg_h", "gt1_fuel_flow_kg_s"])
+            ])
             findings_gt1 = detector.detect_anomalies(df, timestamp_col=ts_col, feature_cols=gt1_features, equipment_name="GT-1")
             
             # Deteksi pada HRSG
-            hrsg_features = ["hrsg1_main_steam_flow_kg_s", "hrsg1_stack_temp_c", "hrsg2_main_steam_flow_kg_s", "hrsg2_stack_temp_c"]
+            hrsg_features = _resolve_feature_cols([
+                ("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"]),
+                ("hrsg1_stack_temp", ["hrsg1_stack_temp_c", "hrsg1_stack_temp"]),
+                ("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"]),
+                ("hrsg2_stack_temp", ["hrsg2_stack_temp_c", "hrsg2_stack_temp"])
+            ])
             findings_hrsg = detector.detect_anomalies(df, timestamp_col=ts_col, feature_cols=hrsg_features, equipment_name="HRSG")
             
             session_state["ai_findings"] = findings_gt2 + findings_gt1 + findings_hrsg

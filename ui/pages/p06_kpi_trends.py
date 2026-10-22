@@ -35,10 +35,32 @@ def render(session_state):
         render_empty_dataset_notice(mode="card", key_suffix="p06")
         return
 
-    ts_col = mapping.get("timestamp", "timestamp")
-    net_col = mapping.get("plant_net", "plant_net_power_mw")
-    amb_col = mapping.get("ambient_temp_c", "ambient_temp_c")
-    fuel_col = mapping.get("gt1_fuel_flow", "plant_total_fuel_kg_h")
+    def _find_col(canon, fallbacks):
+        c = mapping.get(canon)
+        if c and c in df.columns:
+            return c
+        for fb in fallbacks:
+            if fb in df.columns:
+                return fb
+        return None
+
+    ts_col = _find_col("timestamp", ["timestamp", "waktu", "datetime", "date_time", "time"]) or "timestamp"
+    net_col = _find_col("plant_net", ["plant_net_power_mw", "plant_net", "total_net_mw", "plant_gross_mw", "st_gross_mw"])
+    amb_col = _find_col("ambient_temp_c", ["ambient_temp_c", "ambient_temp", "t_ambient", "4HRCTE-0001", "suhu_lingkungan"])
+    fuel_col = _find_col("gt1_fuel_flow", ["plant_total_fuel_kg_h", "gt1_fuel_flow_kg_h", "CFGAAI-0004", "CFGAAI-0005"])
+
+    # Subsampling jika data besar
+    sample_df = df.iloc[::max(1, len(df)//1200)].copy() if len(df) > 1200 else df.copy()
+
+    # Fallback estimasi daya neto jika tidak ada kolom neto eksplisit
+    if not net_col or net_col not in df.columns:
+        gt_cols = [_find_col(f"gt{i}_power", [f"gt{i}_gross_mw", f"GTDL-{i}9173"]) for i in (1, 2, 3)]
+        st_c = _find_col("st_power", ["st_gross_mw", "STDL-20106"])
+        valid_p = [c for c in gt_cols + [st_c] if c and c in df.columns]
+        if valid_p:
+            df["_derived_net_mw"] = df[valid_p].apply(pd.to_numeric, errors="coerce").sum(axis=1) * 0.97
+            sample_df["_derived_net_mw"] = df["_derived_net_mw"].iloc[sample_df.index]
+            net_col = "_derived_net_mw"
 
     # Catatan Engineering Screening
     shield_icon = LUCIDE_SVG_ICONS.get("shield", "")
@@ -60,16 +82,13 @@ def render(session_state):
 
     # GRAFIK 1 & 2 DALAM 2 KOLOM MODERN
     col_g1, col_g2 = st.columns(2, gap="medium")
-    
-    # Subsampling jika data besar
-    sample_df = df.iloc[::max(1, len(df)//1200)].copy() if len(df) > 1200 else df.copy()
 
     with col_g1:
-        if net_col in sample_df.columns and amb_col in sample_df.columns:
+        if net_col and amb_col and net_col in sample_df.columns and amb_col in sample_df.columns:
             fig1 = create_styled_plot("Sensitivitas Daya Neto vs Temperatur Lingkungan", x_label="Temperatur Lingkungan (°C)", y_label="Daya Neto (MW)")
             fig1.add_trace(go.Scatter(
-                x=sample_df[amb_col], 
-                y=sample_df[net_col], 
+                x=pd.to_numeric(sample_df[amb_col], errors="coerce"), 
+                y=pd.to_numeric(sample_df[net_col], errors="coerce"), 
                 mode="markers",
                 marker={"color": EQUIPMENT_COLORS["Plant Net Power"], "size": 5, "opacity": 0.65},
                 name="Titik Operasi Aktual"
@@ -79,11 +98,11 @@ def render(session_state):
             st.info("Tag Daya Neto atau Ambient Temp belum dipetakan.", icon=":material/info:")
 
     with col_g2:
-        if net_col in sample_df.columns and fuel_col in sample_df.columns:
+        if net_col and fuel_col and net_col in sample_df.columns and fuel_col in sample_df.columns:
             fig2 = create_styled_plot("Kurva Karakteristik Input-Output (Bahan Bakar vs Daya)", x_label="Daya Neto (MW)", y_label="Total Aliran Bahan Bakar (kg/h)")
             fig2.add_trace(go.Scatter(
-                x=sample_df[net_col], 
-                y=sample_df[fuel_col], 
+                x=pd.to_numeric(sample_df[net_col], errors="coerce"), 
+                y=pd.to_numeric(sample_df[fuel_col], errors="coerce"), 
                 mode="markers",
                 marker={"color": EQUIPMENT_COLORS["GT-2"], "size": 5, "opacity": 0.65},
                 name="Input Panas Bahan Bakar"
@@ -103,28 +122,31 @@ def render(session_state):
     )
     
     if ts_col in df.columns:
-        ts_series = pd.to_datetime(df[ts_col])
+        ts_series = pd.to_datetime(df[ts_col], errors="coerce")
         dts = (ts_series.shift(-1) - ts_series).iloc[:-1].dt.total_seconds() / 3600.0
-        dts = dts.apply(lambda dt: (5.0/60.0) if (dt <= 0 or dt > 2.0) else dt)
+        med_dt = float(dts.median()) if not dts.empty and float(dts.median()) > 0 else (5.0/60.0)
+        dts = dts.apply(lambda dt: med_dt if (pd.isna(dt) or dt <= 0 or dt > 2.0) else dt)
         
         stat_rows = []
         target_vars = [
             ("Daya Neto PLTGU", net_col, "MW"),
-            ("Daya Gross GT-1", "gt1_gross_mw", "MW"),
-            ("Daya Gross GT-2", "gt2_gross_mw", "MW"),
-            ("Daya Gross GT-3", "gt3_gross_mw", "MW"),
-            ("Daya Gross ST", "st_gross_mw", "MW"),
+            ("Daya Gross GT-1", _find_col("gt1_power", ["gt1_gross_mw", "GTDL-19173"]), "MW"),
+            ("Daya Gross GT-2", _find_col("gt2_power", ["gt2_gross_mw", "GTDL-29173"]), "MW"),
+            ("Daya Gross GT-3", _find_col("gt3_power", ["gt3_gross_mw", "GTDL-39173"]), "MW"),
+            ("Daya Gross ST", _find_col("st_power", ["st_gross_mw", "STDL-20106"]), "MW"),
             ("Temperatur Ambient", amb_col, "°C")
         ]
         
         for name, col_name, unit in target_vars:
-            if col_name in df.columns:
+            if col_name and col_name in df.columns:
                 series = pd.to_numeric(df[col_name], errors="coerce").dropna()
-                arithmetic_mean = series.mean()
+                if series.empty:
+                    continue
+                arithmetic_mean = float(series.mean())
                 
                 # Time-weighted
                 if len(series) > 1 and len(dts) == len(series) - 1:
-                    tw_mean = np.sum(series.iloc[:-1].values * dts.values) / np.sum(dts.values)
+                    tw_mean = float(np.sum(series.iloc[:-1].values * dts.values) / np.sum(dts.values))
                 else:
                     tw_mean = arithmetic_mean
                     

@@ -7,6 +7,26 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 import numpy as np
 
+FALLBACK_ALIASES = {
+    "ambient_temp_c": ["ambient_temp_c", "ambient_temp", "t_ambient", "suhu_lingkungan"],
+    "ambient_press_bar": ["ambient_press_bar", "ambient_press", "p_ambient"],
+    "fuel_lhv_kj_kg": ["fuel_lhv_kj_kg", "lhv_kj_kg", "lhv", "fuel_lhv"],
+    "gt1_fuel_flow": ["CFGAAI-0004", "GTDL-19161", "gt1_fuel_flow_kg_h", "gt1_fuel_flow_kg_s", "gt1_fuel_flow"],
+    "gt2_fuel_flow": ["CFGAAI-0005", "GTDL-29161", "gt2_fuel_flow_kg_h", "gt2_fuel_flow_kg_s", "gt2_fuel_flow"],
+    "gt3_fuel_flow": ["CFGAAI-0006", "GTDL-39161", "gt3_fuel_flow_kg_h", "gt3_fuel_flow_kg_s", "gt3_fuel_flow"],
+    "gt1_comp_p_out": ["GTDL-19149", "gt1_comp_p_out_bar", "gt1_comp_pr"],
+    "gt1_exhaust_temp": ["GTDL-19071", "gt1_exhaust_temp_c", "gt1_exhaust_temp"],
+    "hrsg1_steam_flow": ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"],
+    "main_steam_p": ["main_steam_pressure_bar", "main_steam_p"],
+    "main_steam_t": ["main_steam_temp_c", "main_steam_t"],
+    "feedwater_temp_c": ["feedwater_temp_c", "fw_temp_c"],
+    "feedwater_pressure_bar": ["feedwater_pressure_bar", "fw_pressure_bar"],
+    "condenser_p": ["condenser_pressure_bar", "condenser_p"],
+    "cw_in_t": ["4HRCTE-0002", "cw_inlet_temp_c", "cw_in_t"],
+    "cw_out_t": ["4HRCTE-0003", "cw_outlet_temp_c", "cw_out_t"],
+    "cw_flow": ["cw_flow_kg_s", "cw_flow"],
+}
+
 def generate_hysys_input_package(df: pd.DataFrame, 
                                  tag_mapping: Dict[str, str], 
                                  baseline_period_label: str = "Beban Penuh Siang Hari (Oct 01-15)") -> pd.DataFrame:
@@ -36,10 +56,17 @@ def generate_hysys_input_package(df: pd.DataFrame,
         {"key": "cw_out_t", "desc": "Temperatur Air Pendingin Keluar Kondensor", "unit": "°C", "stream": "Cooling Water", "req": True},
         {"key": "cw_flow", "desc": "Laju Alir Air Pendingin Kondensor", "unit": "kg/s", "stream": "Cooling Water", "req": False},
     ]
-    
+
     for item in hysys_parameters:
         var_key = item["key"]
-        col_name = tag_mapping.get(var_key, var_key)
+        col_name = tag_mapping.get(var_key) if tag_mapping else None
+        if not col_name or col_name not in df.columns:
+            for alias in FALLBACK_ALIASES.get(var_key, [var_key]):
+                if alias in df.columns:
+                    col_name = alias
+                    break
+        if not col_name:
+            col_name = var_key
         
         if col_name in df.columns:
             series = pd.to_numeric(df[col_name], errors="coerce").dropna()

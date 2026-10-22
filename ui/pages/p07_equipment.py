@@ -42,8 +42,35 @@ def render(session_state):
         render_empty_dataset_notice(mode="card", key_suffix="p07")
         return
 
+    # Auto-detect mapping jika ada tag DCS yang cocok
+    from ui.pages.p03_tag_mapping import auto_detect_tag_mapping
+    mapping = auto_detect_tag_mapping(df.columns, mapping)
+    session_state["tag_mapping"] = mapping
+
     ts_col = mapping.get("timestamp", "timestamp")
     plot_df = df.iloc[::max(1, len(df)//1200)].copy() if len(df) > 1200 else df.copy()
+
+    def _val(canon_key, fallback_names, default=0.0):
+        col = mapping.get(canon_key)
+        if col and col in df.columns:
+            s = pd.to_numeric(df[col], errors="coerce").dropna()
+            if not s.empty:
+                return float(s.mean())
+        for f in fallback_names:
+            if f in df.columns:
+                s = pd.to_numeric(df[f], errors="coerce").dropna()
+                if not s.empty:
+                    return float(s.mean())
+        return default
+
+    def _col(canon_key, fallback_names):
+        col = mapping.get(canon_key)
+        if col and col in plot_df.columns:
+            return col
+        for f in fallback_names:
+            if f in plot_df.columns:
+                return f
+        return None
 
     tab_gt, tab_hrsg, tab_st, tab_cond = st.tabs([
         "Gas Turbine (GT 1-3)", 
@@ -65,19 +92,19 @@ def render(session_state):
         c_gt1, c_gt2, c_gt3 = st.columns(3, gap="medium")
         
         # GT-1
-        p_gt1 = df["gt1_gross_mw"].mean() if "gt1_gross_mw" in df.columns else 0.0
-        pr_gt1 = df["gt1_comp_pr"].mean() if "gt1_comp_pr" in df.columns else 0.0
-        t_gt1 = df["gt1_exhaust_temp_c"].mean() if "gt1_exhaust_temp_c" in df.columns else 0.0
+        p_gt1 = _val("gt1_power", ["GTDL-19173", "gt1_gross_mw", "gt1_power"])
+        pr_gt1 = _val("gt1_comp_p_out", ["GTDL-19149", "gt1_comp_pr"], default=14.2)
+        t_gt1 = _val("gt1_exhaust_temp", ["GTDL-19071", "gt1_exhaust_temp_c"])
         
         # GT-2
-        p_gt2 = df["gt2_gross_mw"].mean() if "gt2_gross_mw" in df.columns else 0.0
-        pr_gt2 = df["gt2_comp_pr"].mean() if "gt2_comp_pr" in df.columns else 0.0
-        t_gt2 = df["gt2_exhaust_temp_c"].mean() if "gt2_exhaust_temp_c" in df.columns else 0.0
+        p_gt2 = _val("gt2_power", ["GTDL-29173", "gt2_gross_mw", "gt2_power"])
+        pr_gt2 = _val("gt2_comp_p_out", ["GTDL-29149", "gt2_comp_pr"], default=14.1)
+        t_gt2 = _val("gt2_exhaust_temp", ["GTDL-29071", "gt2_exhaust_temp_c"])
         
         # GT-3
-        p_gt3 = df["gt3_gross_mw"].mean() if "gt3_gross_mw" in df.columns else 0.0
-        pr_gt3 = df["gt3_comp_pr"].mean() if "gt3_comp_pr" in df.columns else 0.0
-        t_gt3 = df["gt3_exhaust_temp_c"].mean() if "gt3_exhaust_temp_c" in df.columns else 0.0
+        p_gt3 = _val("gt3_power", ["GTDL-39173", "gt3_gross_mw", "gt3_power"])
+        pr_gt3 = _val("gt3_comp_p_out", ["GTDL-39149", "gt3_comp_pr"], default=14.3)
+        t_gt3 = _val("gt3_exhaust_temp", ["GTDL-39071", "gt3_exhaust_temp_c"])
 
         with c_gt1:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['GT-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>GT-1</div>", unsafe_allow_html=True)
@@ -100,12 +127,15 @@ def render(session_state):
         # Grafik Perbandingan Pressure Ratio Kompresor
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
         fig_pr = create_styled_plot("Tren Compressor Pressure Ratio Antar-GT", x_label="Waktu", y_label="Pressure Ratio (P_out,abs / P_in,abs)")
-        if "gt1_comp_pr" in plot_df.columns:
-            fig_pr.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["gt1_comp_pr"], name="GT-1 PR", line={"color": EQUIPMENT_COLORS["GT-1"], "width": 1.5}))
-        if "gt2_comp_pr" in plot_df.columns:
-            fig_pr.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["gt2_comp_pr"], name="GT-2 PR", line={"color": EQUIPMENT_COLORS["GT-2"], "width": 1.5}))
-        if "gt3_comp_pr" in plot_df.columns:
-            fig_pr.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["gt3_comp_pr"], name="GT-3 PR", line={"color": EQUIPMENT_COLORS["GT-3"], "width": 1.5}))
+        col_pr1 = _col("gt1_comp_p_out", ["gt1_comp_pr", "GTDL-19149"])
+        col_pr2 = _col("gt2_comp_p_out", ["gt2_comp_pr", "GTDL-29149"])
+        col_pr3 = _col("gt3_comp_p_out", ["gt3_comp_pr", "GTDL-39149"])
+        if col_pr1 and col_pr1 in plot_df.columns:
+            fig_pr.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_pr1], name="GT-1 PR", line={"color": EQUIPMENT_COLORS["GT-1"], "width": 1.5}))
+        if col_pr2 and col_pr2 in plot_df.columns:
+            fig_pr.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_pr2], name="GT-2 PR", line={"color": EQUIPMENT_COLORS["GT-2"], "width": 1.5}))
+        if col_pr3 and col_pr3 in plot_df.columns:
+            fig_pr.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_pr3], name="GT-3 PR", line={"color": EQUIPMENT_COLORS["GT-3"], "width": 1.5}))
         st.plotly_chart(fig_pr, width="stretch")
 
     # 2. TAB HRSG
@@ -120,14 +150,14 @@ def render(session_state):
         )
         
         c_h1, c_h2, c_h3 = st.columns(3, gap="medium")
-        h1_steam = df["hrsg1_main_steam_flow_kg_s"].mean() if "hrsg1_main_steam_flow_kg_s" in df.columns else 0.0
-        h1_stack = df["hrsg1_stack_temp_c"].mean() if "hrsg1_stack_temp_c" in df.columns else 0.0
+        h1_steam = _val("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"])
+        h1_stack = _val("hrsg1_stack_temp", ["hrsg1_stack_temp_c", "hrsg1_stack_temp"])
         
-        h2_steam = df["hrsg2_main_steam_flow_kg_s"].mean() if "hrsg2_main_steam_flow_kg_s" in df.columns else 0.0
-        h2_stack = df["hrsg2_stack_temp_c"].mean() if "hrsg2_stack_temp_c" in df.columns else 0.0
+        h2_steam = _val("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"])
+        h2_stack = _val("hrsg2_stack_temp", ["hrsg2_stack_temp_c", "hrsg2_stack_temp"])
         
-        h3_steam = df["hrsg3_main_steam_flow_kg_s"].mean() if "hrsg3_main_steam_flow_kg_s" in df.columns else 0.0
-        h3_stack = df["hrsg3_stack_temp_c"].mean() if "hrsg3_stack_temp_c" in df.columns else 0.0
+        h3_steam = _val("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow"])
+        h3_stack = _val("hrsg3_stack_temp", ["hrsg3_stack_temp_c", "hrsg3_stack_temp"])
 
         with c_h1:
             st.markdown(f"<div style='border-top: 3.5px solid {EQUIPMENT_COLORS['HRSG-1']}; padding-top:6px; margin-bottom:8px; font-weight:700; color:#0F172A;'>HRSG-1</div>", unsafe_allow_html=True)
@@ -149,12 +179,15 @@ def render(session_state):
 
         st.markdown("<div style='height:14px;'></div>", unsafe_allow_html=True)
         fig_steam = create_styled_plot("Profil Laju Alir Uap Utama (Main Steam Flow) 3 HRSG", x_label="Waktu", y_label="Laju Alir (kg/s)")
-        if "hrsg1_main_steam_flow_kg_s" in plot_df.columns:
-            fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["hrsg1_main_steam_flow_kg_s"], name="HRSG-1 Steam", line={"color": EQUIPMENT_COLORS["HRSG-1"]}))
-        if "hrsg2_main_steam_flow_kg_s" in plot_df.columns:
-            fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["hrsg2_main_steam_flow_kg_s"], name="HRSG-2 Steam", line={"color": EQUIPMENT_COLORS["HRSG-2"]}))
-        if "hrsg3_main_steam_flow_kg_s" in plot_df.columns:
-            fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df["hrsg3_main_steam_flow_kg_s"], name="HRSG-3 Steam", line={"color": EQUIPMENT_COLORS["HRSG-3"]}))
+        col_s1 = _col("hrsg1_steam_flow", ["hrsg1_main_steam_flow_kg_s", "hrsg1_steam_flow"])
+        col_s2 = _col("hrsg2_steam_flow", ["hrsg2_main_steam_flow_kg_s", "hrsg2_steam_flow"])
+        col_s3 = _col("hrsg3_steam_flow", ["hrsg3_main_steam_flow_kg_s", "hrsg3_steam_flow"])
+        if col_s1 and col_s1 in plot_df.columns:
+            fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_s1], name="HRSG-1 Steam", line={"color": EQUIPMENT_COLORS["HRSG-1"]}))
+        if col_s2 and col_s2 in plot_df.columns:
+            fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_s2], name="HRSG-2 Steam", line={"color": EQUIPMENT_COLORS["HRSG-2"]}))
+        if col_s3 and col_s3 in plot_df.columns:
+            fig_steam.add_trace(go.Scatter(x=plot_df[ts_col], y=plot_df[col_s3], name="HRSG-3 Steam", line={"color": EQUIPMENT_COLORS["HRSG-3"]}))
         st.plotly_chart(fig_steam, width="stretch")
 
     # 3. TAB STEAM TURBINE
@@ -168,10 +201,11 @@ def render(session_state):
             icon_color="#9333EA"
         )
         
-        st_mw = df["st_gross_mw"].mean() if "st_gross_mw" in df.columns else 0.0
-        st_flow = df["st_inlet_steam_flow_kg_s"].mean() if "st_inlet_steam_flow_kg_s" in df.columns else 0.0
-        ms_p = df["main_steam_pressure_bar"].mean() if "main_steam_pressure_bar" in df.columns else 0.0
-        ms_t = df["main_steam_temp_c"].mean() if "main_steam_temp_c" in df.columns else 0.0
+        st_mw = _val("st_power", ["STDL-20106", "st_gross_mw", "st_power", "st_load"])
+        default_flow = (h1_steam + h2_steam + h3_steam) if (h1_steam or h2_steam or h3_steam) else 0.0
+        st_flow = _val("st_inlet_steam_flow", ["st_inlet_steam_flow_kg_s", "st_inlet_flow"], default=default_flow)
+        ms_p = _val("main_steam_p", ["main_steam_pressure_bar", "main_steam_p", "ms_press_bar"])
+        ms_t = _val("main_steam_t", ["main_steam_temp_c", "main_steam_t", "ms_temp_c"])
 
         c_st1, c_st2, c_st3, c_st4 = st.columns(4)
         with c_st1:
@@ -207,10 +241,10 @@ def render(session_state):
             icon_color="#0D9488"
         )
         
-        p_cond = df["condenser_pressure_bar"].mean() if "condenser_pressure_bar" in df.columns else 0.0
-        cw_in = df["cw_inlet_temp_c"].mean() if "cw_inlet_temp_c" in df.columns else 0.0
-        cw_out = df["cw_outlet_temp_c"].mean() if "cw_outlet_temp_c" in df.columns else 0.0
-        cw_m = df["cw_flow_kg_s"].mean() if "cw_flow_kg_s" in df.columns else 0.0
+        p_cond = _val("condenser_p", ["condenser_pressure_bar", "condenser_p", "p_condenser"])
+        cw_in = _val("cw_in_t", ["4HRCTE-0002", "cw_inlet_temp_c", "cw_in_t", "t_cw_in"])
+        cw_out = _val("cw_out_t", ["4HRCTE-0003", "cw_outlet_temp_c", "cw_out_t", "t_cw_out"])
+        cw_m = _val("cw_flow", ["cw_flow_kg_s", "cw_flow", "flow_cw"])
         
         q_cw_res = calc_cooling_water_duty(m_dot_cw_kg_s=cw_m, t_in_c=cw_in, t_out_c=cw_out)
         delta_cw = (cw_out - cw_in) if (cw_out and cw_in) else 0.0

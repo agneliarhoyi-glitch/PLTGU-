@@ -6,11 +6,17 @@ Ultra-modern UI dengan visual stat card tajam, high-contrast typography, dan raw
 
 import os
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import streamlit as st
 import streamlit.components.v1 as st_components
 import pandas as pd
 from ui.components import render_synthetic_banner, render_page_hero, LUCIDE_SVG_ICONS, clean_html
+
+WIB_TZ = timezone(timedelta(hours=7))
+
+def _get_wib_now_str():
+    """Mengembalikan waktu saat ini dalam zona WIB (UTC+7) format YYYY-MM-DD HH:MM:SS."""
+    return datetime.now(WIB_TZ).strftime("%Y-%m-%d %H:%M:%S")
 
 def _robust_read_csv(uploaded_file) -> pd.DataFrame:
     """Membaca CSV secara tangguh dengan auto-detect pemisah (koma/titik-koma/tab), encoding, dan skip baris rusak."""
@@ -121,7 +127,7 @@ def render(session_state):
                 session_state["active_version"] = "v1_raw"
                 metadata = {
                     "filename": file_name,
-                    "uploaded_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "uploaded_at": _get_wib_now_str(),
                     "size_kb": size_kb,
                     "sheet": sheet_selected,
                     "rows": len(df_loaded),
@@ -182,7 +188,7 @@ def render(session_state):
         f_disp = f_name if len(f_name) <= 22 else f"{f_name[:10]}...{f_name[-9:]}"
         f_ext = f_name.split(".")[-1].upper() if "." in f_name else "DATA"
         
-        up_time_raw = meta.get("uploaded_at", datetime.now().strftime("%Y-%m-%d %H:%M:%S")) if meta else ""
+        up_time_raw = meta.get("uploaded_at", _get_wib_now_str()) if meta else _get_wib_now_str()
         if " " in up_time_raw:
             up_date, up_clock = up_time_raw.split(" ", 1)
         else:
@@ -192,7 +198,6 @@ def render(session_state):
         n_rows = f"{meta.get('rows', len(active_df)):,}" if meta else f"{len(active_df):,}"
         n_cols = f"{meta.get('cols', len(active_df.columns))}" if meta else f"{len(active_df.columns)}"
         
-        # Render Kartu Metadata 5-Kolom (100% High-Contrast, Bebas Warna Putih)
         # Render Kartu Metadata 5-Kolom (100% High-Contrast, Bebas Warna Putih)
         with st.container(border=True):
             head_col_info, head_col_btn = st.columns([3.6, 1.4])
@@ -210,9 +215,6 @@ def render(session_state):
 <div style="display:flex; gap:8px; margin-bottom:14px;">
     <span style="background:#ECFDF5; color:#059669; border:1px solid #A7F3D0; font-size:11.5px; font-weight:700; padding:3px 9px; border-radius:20px;">
         ✓ Terverifikasi
-    </span>
-    <span style="background:#F8FAFC; color:#475569; border:1px solid #E2E8F0; font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:20px;">
-        Frekuensi: 5 Menit
     </span>
 </div>
 """, unsafe_allow_html=True)
@@ -293,7 +295,7 @@ def render(session_state):
         <div class="meta-stat-icon" style="background:#FFFBEB; color:#D97706;">{activity_svg}</div>
     </div>
     <div class="meta-stat-value">{n_rows}</div>
-    <div class="meta-stat-sub"><span>5 Menit Points</span></div>
+    <div class="meta-stat-sub"><span>Titik Rekaman</span></div>
 </div>
 """, unsafe_allow_html=True)
 

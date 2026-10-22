@@ -229,7 +229,7 @@ def render(session_state):
             trend_pct="0,00%",
             trend_direction="up",
             trend_subtext="vs. periode sebelumnya",
-            trace_footer="Valid / Expected Points • Basis: Interval 5 Menit"
+            trace_footer="Valid / Expected Points • Integritas Data"
         )
     with r2_c3:
         start_str = df[ts_col].iloc[0][:10] if ts_col in df.columns else "2026-10-01"
@@ -246,7 +246,7 @@ def render(session_state):
             trend_pct="2,17%",
             trend_direction="up",
             trend_subtext="vs. periode sebelumnya",
-            trace_footer=f"{start_str} s.d {end_str} • Basis: 5 Menit"
+            trace_footer=f"{start_str} s.d {end_str} • Rentang Operasi"
         )
     with r2_c4:
         ver_name = session_state.get("active_version", "v1_raw")
@@ -268,8 +268,6 @@ def render(session_state):
 
     # BAGIAN GRAFIK MULTI-UNIT SESUAI PERSIS MOCKUP
     chart_svg = LUCIDE_SVG_ICONS.get("chart", "")
-    calendar_svg = LUCIDE_SVG_ICONS.get("calendar", "")
-    interval_label = f"Interval {int(round(detected_dt_min))} Menit ▾" if abs(detected_dt_min - round(detected_dt_min)) < 0.1 else f"Interval {detected_dt_min:.1f} Menit ▾"
     st.markdown(f"""
     <div class="chart-card-container">
         <div class="chart-card-header">
@@ -279,10 +277,6 @@ def render(session_state):
                     <div class="chart-title-text">Profil Pembangkitan Daya Multi-Unit PLTGU</div>
                     <div class="chart-subtitle-text">Perbandingan kontribusi daya generator tiap turbin dan daya ekspor neto ke transmisi</div>
                 </div>
-            </div>
-            <div class="chart-interval-badge">
-                <span style="display:inline-flex; align-items:center;">{calendar_svg}</span>
-                <span>{interval_label}</span>
             </div>
         </div>
     """, unsafe_allow_html=True)
