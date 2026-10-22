@@ -170,11 +170,8 @@ def render(session_state):
     total_canonical = len(CANONICAL_VARIABLES)
     valid_mapped = [c for c, _, _, _ in CANONICAL_VARIABLES if current_mapping.get(c) in df.columns]
     mapped_count = len(valid_mapped)
-    
-    # Kesiapan parameter audit operasional riil
-    # Jika parameter kunci (daya, bahan bakar, suhu) terhubung, kesiapan audit adalah 100%
-    is_core_audit_ready = (mapped_count >= 10)
-    audit_readiness_pct = 100.0 if is_core_audit_ready else round((mapped_count / 10.0) * 100.0, 1)
+    unmapped_canonical_count = total_canonical - mapped_count
+    pct_complete = (mapped_count / total_canonical) * 100.0 if total_canonical > 0 else 0
     
     # Hitung kolom DCS yang belum terpetakan
     mapped_source_cols = set(current_mapping.values())
@@ -186,18 +183,20 @@ def render(session_state):
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px;">
             <div style="flex:1; min-width:280px;">
                 <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px;">
-                    <span style="font-size:15px; font-weight:800; color:#0F172A;">Kesiapan Data Audit Operasi:</span>
-                    <span style="font-size:13px; font-weight:800; color:{'#059669' if is_core_audit_ready else '#2563EB'};">{audit_readiness_pct:.0f}% Siap Dihitung ({mapped_count} Parameter Inti Terhubung)</span>
-                    <span style="background:{'#ECFDF5' if is_core_audit_ready else '#FFFBEB'}; color:{'#059669' if is_core_audit_ready else '#D97706'}; font-size:11px; font-weight:700; padding:2px 10px; border-radius:12px; border:1px solid {'#A7F3D0' if is_core_audit_ready else '#FDE68A'};">
-                        {'✓ 100% Lengkap & Siap' if is_core_audit_ready else 'Perlu Penyesuaian'}
+                    <span style="font-size:15px; font-weight:800; color:#0F172A;">Kelengkapan Skema Variabel:</span>
+                    <span style="font-size:13px; font-weight:800; color:#2563EB;">{mapped_count} / {total_canonical} Tag ({pct_complete:.1f}%)</span>
+                    <span style="background:{'#ECFDF5' if pct_complete >= 80 else '#FFFBEB'}; color:{'#059669' if pct_complete >= 80 else '#D97706'}; font-size:11px; font-weight:700; padding:2px 8px; border-radius:12px; border:1px solid {'#A7F3D0' if pct_complete >= 80 else '#FDE68A'};">
+                        {'✓ Terpetakan Penuh' if pct_complete >= 80 else f'{unmapped_canonical_count} Tag Kosong di Dataset'}
                     </span>
                 </div>
                 <div class="mapping-progress-track">
-                    <div class="mapping-progress-fill" style="width: {audit_readiness_pct}%; background: {'linear-gradient(90deg, #10B981, #059669)' if is_core_audit_ready else '#2563EB'};"></div>
+                    <div class="mapping-progress-fill" style="width: {pct_complete}%;"></div>
                 </div>
-                <div style="font-size:12px; color:#475569; margin-top:4px;">
-                    <span style="font-weight:600; color:#059669;">✓ Seluruh Parameter Inti (Daya Listrik GT 1-3 & ST, Bahan Bakar, Suhu & Tekanan) Terbaca Murni dari Data Asli</span> • 
-                    <span style="color:#64748B;">Total {len(df.columns)} Kolom DCS Mentah Terverifikasi Aman</span>
+                <div style="font-size:12px; color:#64748B; margin-top:4px;">
+                    <span>Total {len(df.columns)} Kolom DCS Mentah</span> • 
+                    <span style="color:#2563EB; font-weight:600;">{mapped_count} Terhubung</span> • 
+                    <span style="color:#D97706; font-weight:600;">{unmapped_canonical_count} Kosong di Dataset</span> • 
+                    <span style="color:#0284C7;">{len(unmapped_cols)} Kolom Ekstra Tersedia (Read-Only)</span>
                 </div>
             </div>
         </div>
